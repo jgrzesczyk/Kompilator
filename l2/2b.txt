@@ -1,0 +1,5 @@
+1) <!--komentarz
+wieloliniowy-->
+2) <!--li>item li</li-->
+3) <!--->
+3a) <!---->

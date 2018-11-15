@@ -1,0 +1,15 @@
+
+1) /* multi-line
+comments */
+2) Should be seen. //single-line comments
+3) // String s = "This is a // comment";
+4) String s = "Should \ be // seen.";
+5) Should be seen. String s2 = "This isn't a /* comment */ ";
+6) String s2 = "Should \\\" be /* seen. */ ";
+7) String s22 = "aa"; //comment
+8) String s3 = "aa"; /*
+It's a comment.
+*/
+9) // String s = "This is a // comment";\
+This too...\
+And this\

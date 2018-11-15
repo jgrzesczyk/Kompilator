@@ -1,0 +1,21 @@
+     Przykładowy
+
+
+             Tekst
+                     Oddzielony
+
+ Wieloma
+
+
+
+
+  Śmiesznymi
+
+
+    Rzeczami                    Włącznie                Ze
+                Spacją i                        Tabulacją
+
+
+      
+
+      
