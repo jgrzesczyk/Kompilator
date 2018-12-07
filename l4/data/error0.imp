@@ -1,7 +1,7 @@
-[ Błąd w linii 3: niewłaściwy zakres tablicy b ]
-DECLARE
-  a; b(11:10);
-IN
+( Błąd w linii 3: niewłaściwy zakres tablicy b )
+VAR
+  a; b(11:10)
+BEGIN
   b(10) := 1;
   a := b(11);
 END
