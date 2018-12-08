@@ -10,88 +10,138 @@ void yyerror (const char*);
 int yylex();
 bool error = false;
 
-std::ostringstream ss;
-std::string rpn;
-std::regex regex("([-]*[0-9]+)(?!.*[0-9]+)");
 %}
+%union rec{
+	unsigned long long intval;
+	char * pid;
+	struct varTab *tab;
+	struct varTabMath *tab2;
+	struct varTabFor *tab3;
+	struct labels *label;
+}
+%start program
 
 %token number
+%token DECLARE IN END
+%token COLON
+%token <label> IF WHILE
+%token <tab3> FOR
+%token FROM TO DOWNTO DO THEN ELSE ENDDO ENDFOR ENDWHILE ENDIF
+%token READ WRITE
+%token GE LE NEQ
+%token ASSIGN
+%token <pid> pidentifier
+%token <intval> num
+
 
 %left '+' '-'
-%left '/' '*' '%'
-%right '^'
-%right NEG
+%left '*' '/' '%'
 %%
-program: 
-	   | line program
-	   ;
+program: DECLARE declarations IN commands END {
+	
+}
+;
 
-line: '\n'
-	| error '\n' { yyerrok; rpn = ""; std::cout << "Błąd.\n"; error = false; }
-	| expression '\n' { 
-		if(error) {
-			std::cout << "Błąd.\n";
-		} else {
-			std::cout << rpn << "\n";
-			$$ = $1; 
-			std::cout << "Wynik: " << $1 << "\n";   
-		}
-		error = false;
-		$$ = 0;
-		rpn = "";
-	}
-	;
+declarations: 
+| declarations pidentifier COLON {
+	std::cout << "Deklaruje " << $2 << "\n";
+}
+| declarations pidentifier '(' num ':' num ')' COLON {
+	std::cout << "Deklaruje talbice " << $2 << "\n";
+}
+;
 
-expression: number { ss << $1; rpn.append(ss.str()).append(" "); ss.str(""); }
-		  | expression '+' expression { 
-				if(!error) {
-					$$ = $1+$3;
-				} 
-				rpn.append("+ ");  
-		  }
-		  | expression '*' expression { 
-				if(!error) {
-					$$ = $1*$3;
-				} 
-				rpn.append("* ");  
-		  }
-		  | expression '/' expression {
-				if($3 == 0 || error) {
-						error = true;
-				} else {
-					$$ = $1/$3; 
-				} 
-				rpn.append("/ "); 
-		  }
-			| expression '^' expression { 
-				if(!error) {
-					$$ = pow($1,$3);
-				}
-				rpn.append("^ ");  
-		  }
-		  | expression '%' expression {
-				if($3 == 0 || error) {
-						error = true;
-				} else {
-					$$ = $1%$3;
-					if($$ < 0) {
-						$$ = $$+$3;
-					}
-				} 
-				rpn.append("% "); 
-		  }
-		  | expression '-' expression { 
-				if(!error) {
-					$$ = $1-$3;
-				} 
-				rpn.append("- ");  
-		  }
-		  | '-' expression %prec NEG { 
-			  $$ = -$2;
-			  rpn = std::regex_replace(rpn, regex, "-$0");
-		  }
-		  | '(' expression ')' { $$ = $2; }
-		  ;
+commands: commands command
+| command
+;
+
+command: identifier ASSIGN expression COLON {
+	
+}
+| IF condition THEN commands ELSE commands ENDIF {
+	
+}
+| IF condition THEN commands ENDIF {
+	
+}
+| WHILE condition DO commands ENDWHILE {
+	
+}
+| DO commands WHILE condition ENDDO {
+	
+}
+| FOR pidentifier FROM value TO value DO commands ENDFOR {
+	
+}
+| FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
+	
+}
+| READ identifier COLON {
+	
+}
+| WRITE value COLON {
+	
+}
+;
+
+expression: value {
+	
+}
+| value '+' value {
+	
+}
+| value '-' value {
+	
+}
+| value '*' value {
+	
+}
+| value '/' value {
+	
+}
+| value '%' value {
+	
+}
+;
+
+condition: value '=' value {
+	
+}
+| value NEQ value {
+	
+}
+| value '<' value {
+	
+}
+| value '>' value {
+	
+}
+| value LE value {
+	
+}
+| value GE value {
+	
+}
+;
+
+value: num {
+	
+}
+| identifier {
+	
+}
+;
+
+identifier: pidentifier {
+	std::cout << "Chce brać " << $1 << "\n";
+}
+| pidentifier '(' pidentifier ')' {
+	std::cout << "Chce brać " << $1 << "(" << $3 << ")\n";
+}
+| pidentifier '(' num ')' {
+	std::cout << "Chce brać " << $1 << "(" << $3 << ")\n";
+}
+;
 %% 
 
 int main (void) {

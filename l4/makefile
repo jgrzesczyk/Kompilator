@@ -10,4 +10,3 @@ y.tab.c: 4.y
 
 clean: 
 	rm -rf lex.yy.c y.tab.c y.tab.h 4
-
