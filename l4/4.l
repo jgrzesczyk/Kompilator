@@ -7,6 +7,7 @@ int yylex();
 
 %%
 \[([^\[\]])*\] ;
+"#".*$ ;
 [0-9]+ {yylval.intval=atoll(yytext); return num;}
 ":=" {return ASSIGN;}
 "!=" {return NEQ;}

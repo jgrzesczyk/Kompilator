@@ -4,7 +4,8 @@
 #include <string>
 #include <sstream>
 #include <cmath>
-#include <regex>
+#include <vector>
+#include "methods.hpp"
 
 void yyerror (const char*);
 int yylex();
@@ -13,7 +14,7 @@ bool error = false;
 %}
 %union rec{
 	unsigned long long intval;
-	char * pid;
+	char* pid;
 	struct varTab *tab;
 	struct varTabMath *tab2;
 	struct varTabFor *tab3;
