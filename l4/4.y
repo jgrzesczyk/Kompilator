@@ -1,15 +1,23 @@
 %{
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <string>
 #include <sstream>
 #include <cmath>
 #include <vector>
 
-void yyerror (const char*);
+int yyerror (const std::string);
+extern int yylineno;
 int yylex();
-bool error = false;
 
+long long int memCounter;
+long long int depth;
+int assignFlag;
+int writeFlag;
+
+
+std::vector<std::string> codeStack;
 %}
 %union {
 	char* str;
@@ -24,6 +32,7 @@ bool error = false;
 %type <str> value
 %type <str> identifier
 %%
+
 program: DECLARE declarations IN commands END {
 	
 }
@@ -141,10 +150,39 @@ identifier: IDENT {
 ;
 %% 
 
-int main (void) {
-	return yyparse();
+void printStdCode() {
+	long long int i;
+	for(i = 0; i < codeStack.size(); i++)
+        std::cout << codeStack.at(i) << std::endl;
 }
 
-void yyerror(const char* s) {
-	error = true;
+void printCode(std::string filename) {
+	std::ofstream out_code(filename);
+	long long int i;
+	for(i = 0; i < codeStack.size(); i++)
+        out_code << codeStack.at(i) << std::endl;
+}
+
+void parser(int argc, char** argv) {
+	assignFlag = 1;
+	memCounter = 12;
+	writeFlag = 0;
+	depth = 0;
+
+	yyparse();
+
+	if(argc < 2) {
+		printStdCode();
+	} else {
+		printCode(argv[1]);
+	}
+}
+
+int main (int argc, char** argv) {
+	parser(argc, argv);
+}
+
+int yyerror(const std::string s) {
+	std::cout << "Błąd [około linii " << yylineno << "]: " << s << std::endl;
+	return 1;
 }

@@ -8,10 +8,10 @@ int yylex();
 %x COMMENT
 %%
 
-"["             { BEGIN(COMMENT); }
-<COMMENT>"]"        { BEGIN(INITIAL); }
-<COMMENT>(\n|.)     ;
-<COMMENT><<EOF>>    { printf("Błąd: niezakończony komentarz.\n"); yyterminate(); }
+"[" { BEGIN(COMMENT); }
+<COMMENT>"]" { BEGIN(INITIAL); }
+<COMMENT>(\n|.) ;
+<COMMENT><<EOF>> { printf("Błąd: niezakończony komentarz.\n"); yyterminate(); }
 "#".*$ ;
 
 ":=" {return ASSIGN;}
@@ -23,13 +23,13 @@ int yylex();
 ">" {return GT;}
 ";" {return COLON;}
 "+" { return ADD;}
-":" { return INDEXER;      }
-"-" { return SUB;      }
-"*" { return MUL;      }
-"/" { return DIV;      }
-"%" { return MOD;      }
-"(" { return LB;       }
-")" { return RB;       }
+":" { return INDEXER;}
+"-" { return SUB;}
+"*" { return MUL;}
+"/" { return DIV;}
+"%" { return MOD;}
+"(" { return LB;}
+")" { return RB;}
 DECLARE {return DECLARE;}
 IN {return IN;}	
 END {return END;}
@@ -51,7 +51,7 @@ ENDIF {return ENDIF;}
 [_a-z]+ {yylval.str = (char *)strdup(yytext); return IDENT;}
 [0-9]+ {yylval.str = (char *)strdup(yytext); return NUM;}
 [ \t\r\n]+ ;
-. ;
+. { printf("Błąd: nieoczekiwany znak %c\n",yytext[0]); yyterminate(); }
 %%
 
 int yywrap(void) {return 1;}
