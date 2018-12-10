@@ -30,14 +30,20 @@ std::map<std::string, Identifier> idStack;
 
 int yyerror (const std::string);
 extern int yylineno;
+extern FILE * yyin;
 int yylex();
 
+
+void setRegister(std::string);
+void zeroRegister();
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
 void insertIdentifier(std::string key, Identifier i);
 void pushCommand(std::string);
 void pushCommand(std::string, long long int);
-
+void memToRegister(long long int);
+std::string decToBin(long long int n);
+void registerToMem(long long int);
 long long int memCounter;
 long long int depth;
 bool assignFlag;
@@ -95,6 +101,9 @@ declarations:
 		Identifier ide;
 		createIdentifier(&ide, $2, false, "IDE", atoll($4), atoll($6));
 		insertIdentifier($2, ide);
+		memCounter = memCounter + (atoll($6) - atoll($4) + 1);
+		setRegister(std::to_string(ide.mem+1));
+        registerToMem(ide.mem);
 	}
 }
 ;
@@ -256,6 +265,40 @@ identifier: IDENT {
 ;
 %% 
 
+void setRegister(std::string number) {
+    long long int n = stoll(number);
+	/*if (n == registerValue) {
+		return;
+	}*/
+    std::string bin = decToBin(n);
+	long long int limit = bin.size();
+    zeroRegister();
+	for(long long int i = 0; i < limit; ++i){
+		if(bin[i] == '1'){
+			pushCommand("INC");
+			/*registerValue++;*/
+		}
+		if(i < (limit - 1)){
+	        pushCommand("SHL");
+	        /*registerValue *= 2;*/
+		}
+	}
+}
+
+void memToRegister(long long int mem) {
+	pushCommand("LOAD", mem);
+	/*registerValue = -1;*/
+}
+
+std::string decToBin(long long int n) {
+    std::string r;
+    while(n!=0) {r=(n%2==0 ?"0":"1")+r; n/=2;}
+    return r;
+}
+
+void registerToMem(long long int mem) {
+	pushCommand("STORE", mem);
+}
 
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type) {
 	id->name = name;
@@ -311,23 +354,21 @@ void printCode(std::string filename) {
         out_code << codeStack.at(i) << std::endl;
 }
 
-void parser(int argc, char** argv) {
+int main (int argc, char** argv) {
 	assignFlag = true;
 	memCounter = 12;
 	writeFlag = false;
 	depth = 0;
 
-	yyparse();
+	yyin = fopen(argv[1], "r");
+    yyparse();
 
-	if(argc < 2) {
+	if(argc < 3) {
 		//todo printStdCode();
 	} else {
-		printCode(argv[1]);
+		printCode(argv[2]);
 	}
-}
-
-int main (int argc, char** argv) {
-	parser(argc, argv);
+	return 0;
 }
 
 int yyerror(const std::string s) {

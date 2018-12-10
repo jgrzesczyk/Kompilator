@@ -12,4 +12,4 @@ clean:
 	rm -rf lex.yy.c y.tab.c y.tab.h 4
 
 t:
-	./4 < ../test/test.txt
+	./4 ../test/test.txt
