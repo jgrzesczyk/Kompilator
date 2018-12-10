@@ -51,7 +51,7 @@ ENDIF {return ENDIF;}
 [_a-z]+ {yylval.str = (char *)strdup(yytext); return IDENT;}
 [0-9]+ {yylval.str = (char *)strdup(yytext); return NUM;}
 [ \t\r\n]+ ;
-. { printf("Błąd: nieoczekiwany znak %c\n",yytext[0]); yyterminate(); }
+. { printf("Wystąpiło słowo niezgodne z gramatyką!\n"); yyterminate(); }
 %%
 
 int yywrap(void) {return 1;}
