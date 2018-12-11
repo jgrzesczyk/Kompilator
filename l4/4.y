@@ -72,7 +72,7 @@ std::string argumentsTabIndex[2] = {"-1", "-1"};
 %%
 
 program: DECLARE declarations IN commands END {
-	pushCommand("HALT");registerToMem(100);
+	pushCommand("HALT");
 }
 ;
 
@@ -317,7 +317,7 @@ void registerToMem(long long int mem) {
 	        /*registerValue *= 2;*/
 		}
 	}
-    pushCommand("STORE B");
+    pushCommand("STORE B"); //todo many registers
 }
 
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type) {
