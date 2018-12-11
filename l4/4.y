@@ -72,7 +72,7 @@ std::string argumentsTabIndex[2] = {"-1", "-1"};
 %%
 
 program: DECLARE declarations IN commands END {
-	pushCommand("HALT");
+	pushCommand("HALT");registerToMem(100);
 }
 ;
 
@@ -130,8 +130,15 @@ command: identifier ASSIGN expression COLON {
 | READ identifier COLON {
 	
 }
-| WRITE value COLON {
-	
+| WRITE {
+	assignFlag = false;
+	writeFlag = true;
+} value COLON {
+	Identifier ide = idStack.at(expressionArguments[0]);
+
+	if(ide.type == "NUM") {
+		
+	}
 }
 ;
 
@@ -272,7 +279,7 @@ void setRegister(std::string number) {
 	}*/
     std::string bin = decToBin(n);
 	long long int limit = bin.size();
-    zeroRegister();
+   
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
 			pushCommand("INC");
@@ -297,7 +304,20 @@ std::string decToBin(long long int n) {
 }
 
 void registerToMem(long long int mem) {
-	pushCommand("STORE", mem);
+	pushCommand("SUB A A");
+	std::string bin = decToBin(mem);
+	long long int limit = bin.size();
+	for(long long int i = 0; i < limit; ++i){
+		if(bin[i] == '1'){
+			pushCommand("INC A");
+			/*registerValue++;*/
+		}
+		if(i < (limit - 1)){
+	        pushCommand("ADD A A");
+	        /*registerValue *= 2;*/
+		}
+	}
+    pushCommand("STORE B");
 }
 
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type) {
@@ -364,7 +384,7 @@ int main (int argc, char** argv) {
     yyparse();
 
 	if(argc < 3) {
-		//todo printStdCode();
+		printStdCode();
 	} else {
 		printCode(argv[2]);
 	}
