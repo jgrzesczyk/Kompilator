@@ -34,16 +34,17 @@ extern FILE * yyin;
 int yylex();
 
 
-void setRegister(std::string);
+void setRegister(std::string, std::string);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
 void removeIdentifier(std::string key);
 void insertIdentifier(std::string key, Identifier i);
 void pushCommand(std::string);
 void pushCommand(std::string, long long int);
-void memToRegister(long long int);
+long long int valueInMemory(long long int mem);
+void memToRegister(long long int, std::string);
 std::string decToBin(long long int n);
-void registerToMem(long long int);
+void registerToMem(std::string, long long int);
 long long int memCounter;
 long long int depth;
 bool assignFlag;
@@ -99,11 +100,11 @@ declarations:
 		exit(1);
     } else {
 		Identifier ide;
-		createIdentifier(&ide, $2, false, "IDE", atoll($4), atoll($6));
+		createIdentifier(&ide, $2, false, "ARR", atoll($4), atoll($6));
 		insertIdentifier($2, ide);
 		memCounter = memCounter + (atoll($6) - atoll($4) + 1);
-		setRegister(std::to_string(ide.mem+1));
-        registerToMem(ide.mem);
+		setRegister("B", std::to_string(ide.mem+1));
+        registerToMem("B", ide.mem);
 	}
 }
 ;
@@ -131,11 +132,28 @@ command: identifier ASSIGN expression COLON {
 	assignFlag = true;
 } identifier COLON {
 	if(assignTarget.type == "ARR") {
-
+		Identifier index = idStack.at(tabAssignTargetIndex);
+		if(index.type == "NUM") {
+			pushCommand("GET B");
+			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
+			std::cout<< "read element nmb " << tabElMem << std::endl;
+			registerToMem("B", tabElMem);
+			removeIdentifier(index.name);
+		}
+		else {
+			std::cout<< "read element ide " << (assignTarget.mem + index.mem) << std::endl;
+			memToRegister(assignTarget.mem, "B");
+			memToRegister(index.mem, "A");
+			pushCommand("LOAD C");
+			pushCommand("ADD B C");
+			pushCommand("COPY A B");
+			pushCommand("GET B");
+			pushCommand("STORE B");
+		}
 
 	} else if(!assignTarget.local) {
 		pushCommand("GET B"); //todo many r
-		registerToMem(assignTarget.mem);
+		registerToMem("B", assignTarget.mem);
 	} else {
 		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
         exit(1);
@@ -150,12 +168,26 @@ command: identifier ASSIGN expression COLON {
 	Identifier ide = idStack.at(expressionArguments[0]);
 
 	if(ide.type == "NUM") {
-		setRegister(ide.name);
+		setRegister("B", ide.name);
 		removeIdentifier(ide.name);
 	} else if(ide.type == "IDE") {
-		memToRegister(ide.mem);
+		memToRegister(ide.mem, "B");
 	} else {
-
+		Identifier index = idStack.at(argumentsTabIndex[0]);
+		if(index.type == "NUM") {
+			long long int tabElMem = ide.mem + stoll(index.name) + 1 - ide.beginTable;
+			std::cout<< "write element nmb " << tabElMem << std::endl;
+			memToRegister(tabElMem, "B");
+			removeIdentifier(index.name);
+		} else {
+			memToRegister(ide.mem, "B"); //todo many r
+			memToRegister(index.mem, "A");
+			pushCommand("LOAD C");
+			std::cout<< "write element ide " << (ide.mem + index.mem) << std::endl;
+			pushCommand("ADD B C"); //wartosc rejestru b - indeks w memory odpowiedniego tab[i]
+			pushCommand("COPY A B");
+			pushCommand("LOAD B");
+		}
 	}
 	pushCommand("PUT B"); //todo many register
 	assignFlag = true;
@@ -278,11 +310,16 @@ identifier: IDENT {
 		std::cout << "Błąd [okolice linii " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
 		exit(1);
 	} else {
+		if(idStack.at($3).isTable) {
+			std::cout << "Błąd [okolice linii " << yylineno << "]: Indeks tablicy nie może być zmienną tablicową!" << std::endl;
+			exit(1);
+		}
 		if(!idStack.at($3).initialized) {
 			std::cout << "Błąd [okolice linii " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
 			exit(1);
 		}
-		if(false) { //todo warunek na zly indeks tablicy
+		
+		if(false) { //todo warunek na zly indeks tablicy?
 			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
 			exit(1);
 		}
@@ -344,8 +381,12 @@ identifier: IDENT {
 
 
 
-void setRegister(std::string number) {
-	std::cout << "do rejestru B przyposuje wartosc " << number << std::endl;
+
+
+
+
+void setRegister(std::string reg, std::string number) {
+	std::cout << "do rejestru "<< reg <<" przyposuje wartosc " << number << std::endl;
     long long int n = stoll(number);
 	/*if (n == registerValue) {
 		return;
@@ -353,21 +394,36 @@ void setRegister(std::string number) {
     std::string bin = decToBin(n);
 	long long int limit = bin.size();
    
-	pushCommand("SUB B B");
+	pushCommand("SUB " + reg + " " + reg);
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
-			pushCommand("INC B");
+			pushCommand("INC " + reg);
 			/*registerValue++;*/
 		}
 		if(i < (limit - 1)){
-	        pushCommand("ADD B B");
+	        pushCommand("ADD " + reg + " " + reg);
 	        /*registerValue *= 2;*/
 		}
 	}
 }
 
-void memToRegister(long long int mem) {
-	std::cout << "do rejestru B przyposuje wartosc z pamieci p_" << std::to_string(mem) << std::endl;
+long long int valueInMemory(long long int mem) {
+	std::string bin = decToBin(mem);
+	long long int limit = bin.size(), value = 0;
+	for(long long int i = 0; i < limit; ++i){
+		if(bin[i] == '1'){
+			pushCommand("INC A");
+			value++;
+		}
+		if(i < (limit - 1)){
+	        pushCommand("ADD A A");
+	        value *= 2;
+		}
+	}
+	return value;
+}
+void memToRegister(long long int mem, std::string reg) {
+	std::cout << "do rejestru "<< reg <<" przyposuje wartosc z pamieci p_" << std::to_string(mem) << std::endl;
 	pushCommand("SUB A A");
 	std::string bin = decToBin(mem);
 	long long int limit = bin.size();
@@ -381,7 +437,7 @@ void memToRegister(long long int mem) {
 	        /*registerValue *= 2;*/
 		}
 	}
-    pushCommand("LOAD B"); //todo many registers
+    pushCommand("LOAD " + reg); //todo many registers
 }
 
 std::string decToBin(long long int n) {
@@ -390,8 +446,8 @@ std::string decToBin(long long int n) {
     return r;
 }
 
-void registerToMem(long long int mem) {
-	std::cout << "z rejestru B przyposuje wartosc do pamieci p_" << std::to_string(mem) << std::endl;
+void registerToMem(std::string reg, long long int mem) {
+	std::cout << "z rejestru "<< reg <<" przyposuje wartosc do pamieci p_" << std::to_string(mem) << std::endl;
 	pushCommand("SUB A A");
 	std::string bin = decToBin(mem);
 	long long int limit = bin.size();
@@ -405,7 +461,7 @@ void registerToMem(long long int mem) {
 	        /*registerValue *= 2;*/
 		}
 	}
-    pushCommand("STORE B"); //todo many registers
+    pushCommand("STORE " + reg); //todo many registers
 }
 
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type) {

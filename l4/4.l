@@ -5,6 +5,7 @@ void yyerror (const char* s);
 int yylex();
 %}
 
+%option yylineno
 %x COMMENT
 %%
 
