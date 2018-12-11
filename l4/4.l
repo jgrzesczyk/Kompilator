@@ -12,7 +12,6 @@ int yylex();
 <COMMENT>"]" { BEGIN(INITIAL); }
 <COMMENT>(\n|.) ;
 <COMMENT><<EOF>> { printf("Błąd: niezakończony komentarz.\n"); yyterminate(); }
-"#".*$ ;
 
 ":=" {return ASSIGN;}
 "!=" {return NEQ;}

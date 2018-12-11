@@ -131,11 +131,14 @@ command: identifier ASSIGN expression COLON {
 	assignFlag = true;
 } identifier COLON {
 	if(assignTarget.type == "ARR") {
+
+
 	} else if(!assignTarget.local) {
 		pushCommand("GET B"); //todo many r
 		registerToMem(assignTarget.mem);
 	} else {
-
+		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+        exit(1);
 	}
 	idStack.at(assignTarget.name).initialized = true;
 	assignFlag = true;
@@ -219,7 +222,19 @@ condition: value EQ value {
 ;
 
 value: NUM {
-	
+	if(assignFlag){
+		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba przypisania do stałej." << std::endl;
+		exit(1);
+	}
+	Identifier s;
+	createIdentifier(&s, $1, false, "NUM");
+	insertIdentifier($1, s);
+	if (expressionArguments[0] == "-1"){
+		expressionArguments[0] = $1;
+	}
+	else {
+		expressionArguments[1] = $1;
+	}
 }
 | identifier
 ;
@@ -267,8 +282,24 @@ identifier: IDENT {
 			std::cout << "Błąd [okolice linii " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
 			exit(1);
 		}
-	
+		if(false) { //todo warunek na zly indeks tablicy
+			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
+			exit(1);
+		}
 
+		if(!assignFlag) {
+			if (expressionArguments[0] == "-1"){
+				expressionArguments[0] = $1;
+				argumentsTabIndex[0] = $3;
+			}
+			else {
+				expressionArguments[1] = $1;
+				argumentsTabIndex[1] = $3;
+			}
+		} else {
+			assignTarget = idStack.at($1);
+			tabAssignTargetIndex = $3;
+		}
 	}
 }
 | IDENT LB NUM RB {
@@ -284,13 +315,34 @@ identifier: IDENT {
 			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
 			exit(1);
 		}
-	
 
+		Identifier s;
+		createIdentifier(&s, $3, false, "NUM");
+		insertIdentifier($3, s);
+
+		if(!assignFlag){
+			if (expressionArguments[0] == "-1"){
+				expressionArguments[0] = $1;
+				argumentsTabIndex[0] = $3;
+			}
+			else{
+				expressionArguments[1] = $1;
+				argumentsTabIndex[1] = $3;
+			}
+		}
+		else {
+			assignTarget = idStack.at($1);
+			tabAssignTargetIndex = $3;
+		}
 	}
 
 }
 ;
-%% 
+%%
+
+
+
+
 
 void setRegister(std::string number) {
 	std::cout << "do rejestru B przyposuje wartosc " << number << std::endl;
