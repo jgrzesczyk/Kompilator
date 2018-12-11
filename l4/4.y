@@ -35,9 +35,9 @@ int yylex();
 
 
 void setRegister(std::string);
-void zeroRegister();
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
+void removeIdentifier(std::string key);
 void insertIdentifier(std::string key, Identifier i);
 void pushCommand(std::string);
 void pushCommand(std::string, long long int);
@@ -127,8 +127,18 @@ command: identifier ASSIGN expression COLON {
 | FOR IDENT FROM value forbody {
 	
 }
-| READ identifier COLON {
-	
+| READ {
+	assignFlag = true;
+} identifier COLON {
+	if(assignTarget.type == "ARR") {
+	} else if(!assignTarget.local) {
+		pushCommand("GET B"); //todo many r
+		registerToMem(assignTarget.mem);
+	} else {
+
+	}
+	idStack.at(assignTarget.name).initialized = true;
+	assignFlag = true;
 }
 | WRITE {
 	assignFlag = false;
@@ -137,8 +147,18 @@ command: identifier ASSIGN expression COLON {
 	Identifier ide = idStack.at(expressionArguments[0]);
 
 	if(ide.type == "NUM") {
-		
+		setRegister(ide.name);
+		removeIdentifier(ide.name);
+	} else if(ide.type == "IDE") {
+		memToRegister(ide.mem);
+	} else {
+
 	}
+	pushCommand("PUT B"); //todo many register
+	assignFlag = true;
+	writeFlag = false;
+	expressionArguments[0] = "-1";
+	argumentsTabIndex[0] = "-1";
 }
 ;
 
@@ -201,9 +221,7 @@ condition: value EQ value {
 value: NUM {
 	
 }
-| identifier {
-	
-}
+| identifier
 ;
 
 identifier: IDENT {
@@ -218,11 +236,13 @@ identifier: IDENT {
 				exit(1);
 			}
 			if (expressionArguments[0] == "-1"){
-                    expressionArguments[0] = $1;
-                }
-                else{
-                    expressionArguments[1] = $1;
-                }
+				expressionArguments[0] = $1;
+			}
+			else{
+				expressionArguments[1] = $1;
+			}
+		} else {
+			assignTarget = idStack.at($1);
 		}
 	} else {
 		std::cout << "Błąd [okolice linii " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
@@ -273,6 +293,7 @@ identifier: IDENT {
 %% 
 
 void setRegister(std::string number) {
+	std::cout << "do rejestru B przyposuje wartosc " << number << std::endl;
     long long int n = stoll(number);
 	/*if (n == registerValue) {
 		return;
@@ -280,21 +301,35 @@ void setRegister(std::string number) {
     std::string bin = decToBin(n);
 	long long int limit = bin.size();
    
+	pushCommand("SUB B B");
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
-			pushCommand("INC");
+			pushCommand("INC B");
 			/*registerValue++;*/
 		}
 		if(i < (limit - 1)){
-	        pushCommand("SHL");
+	        pushCommand("ADD B B");
 	        /*registerValue *= 2;*/
 		}
 	}
 }
 
 void memToRegister(long long int mem) {
-	pushCommand("LOAD", mem);
-	/*registerValue = -1;*/
+	std::cout << "do rejestru B przyposuje wartosc z pamieci p_" << std::to_string(mem) << std::endl;
+	pushCommand("SUB A A");
+	std::string bin = decToBin(mem);
+	long long int limit = bin.size();
+	for(long long int i = 0; i < limit; ++i){
+		if(bin[i] == '1'){
+			pushCommand("INC A");
+			/*registerValue++;*/
+		}
+		if(i < (limit - 1)){
+	        pushCommand("ADD A A");
+	        /*registerValue *= 2;*/
+		}
+	}
+    pushCommand("LOAD B"); //todo many registers
 }
 
 std::string decToBin(long long int n) {
@@ -304,6 +339,7 @@ std::string decToBin(long long int n) {
 }
 
 void registerToMem(long long int mem) {
+	std::cout << "z rejestru B przyposuje wartosc do pamieci p_" << std::to_string(mem) << std::endl;
 	pushCommand("SUB A A");
 	std::string bin = decToBin(mem);
 	long long int limit = bin.size();
@@ -329,6 +365,7 @@ void createIdentifier(Identifier* id, std::string name, bool isLocal, std::strin
 	id->isTable = false;
 	id->beginTable = -1;
 	id->endTable = -1;
+
 }
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end) {
 	id->name = name;
@@ -340,6 +377,18 @@ void createIdentifier(Identifier* id, std::string name, bool isLocal, std::strin
 	id->beginTable = begin;
 	id->endTable = end;
 }
+void removeIdentifier(std::string key) {
+    if(idStack.count(key) > 0) {
+        if(idStack.at(key).counter > 0) {
+            idStack.at(key).counter = idStack.at(key).counter-1;
+        }
+        else {
+            idStack.erase(key);
+            memCounter--;
+        }
+    }
+    std::cout << "Remove: " << key << std::endl;
+}
 void insertIdentifier(std::string key, Identifier i) {
     if(idStack.count(key) == 0) {
         idStack.insert(make_pair(key, i));
@@ -349,7 +398,7 @@ void insertIdentifier(std::string key, Identifier i) {
     else {
         idStack.at(key).counter = idStack.at(key).counter+1;
     }
-    std::cout << "Add: " << key << " " << memCounter-1 << std::endl;
+    std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << std::endl;
 }
 
 void pushCommand(std::string str) {
