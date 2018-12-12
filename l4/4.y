@@ -113,8 +113,29 @@ commands: commands command
 | command
 ;
 
-command: identifier ASSIGN expression COLON {
-	
+command: identifier ASSIGN {
+	assignFlag = false;
+} expression COLON {
+	if(assignTarget.type == "ARR") {
+		Identifier index = idStack.at(tabAssignTargetIndex);
+		if(index.type == "NUM") {
+			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
+			registerToMem("B", tabElMem);
+			removeIdentifier(index.name);
+		} else {//todo!!!!!
+			
+		}
+	}
+	else if(!assignTarget.local) {
+		std::cout << "WPISUJE do pamiec" << assignTarget.mem << std::endl;
+		registerToMem("B", assignTarget.mem);
+	}
+	else {
+		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+		exit(1);
+	}
+	idStack.at(assignTarget.name).initialized = true;
+	assignFlag = true;
 }
 | IF condition THEN commands ifbody {
 	
@@ -136,16 +157,17 @@ command: identifier ASSIGN expression COLON {
 		if(index.type == "NUM") {
 			pushCommand("GET B");
 			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
-			std::cout<< "read element nmb " << tabElMem << std::endl;
 			registerToMem("B", tabElMem);
 			removeIdentifier(index.name);
 		}
-		else {
-			std::cout<< "read element ide " << (assignTarget.mem + index.mem) << std::endl;
+		else { //DOBRZE!!!!
 			memToRegister(assignTarget.mem, "B");
+			memToRegister(assignTarget.beginTable, "C");
 			memToRegister(index.mem, "A");
-			pushCommand("LOAD C");
-			pushCommand("ADD B C");
+			pushCommand("LOAD D");
+			pushCommand("ADD B D");
+			pushCommand("SUB B C");
+			pushCommand("INC B");
 			pushCommand("COPY A B");
 			pushCommand("GET B");
 			pushCommand("STORE B");
@@ -176,15 +198,16 @@ command: identifier ASSIGN expression COLON {
 		Identifier index = idStack.at(argumentsTabIndex[0]);
 		if(index.type == "NUM") {
 			long long int tabElMem = ide.mem + stoll(index.name) + 1 - ide.beginTable;
-			std::cout<< "write element nmb " << tabElMem << std::endl;
 			memToRegister(tabElMem, "B");
 			removeIdentifier(index.name);
 		} else {
-			memToRegister(ide.mem, "B"); //todo many r
+			memToRegister(assignTarget.mem, "B");
+			memToRegister(assignTarget.beginTable, "C");
 			memToRegister(index.mem, "A");
-			pushCommand("LOAD C");
-			std::cout<< "write element ide " << (ide.mem + index.mem) << std::endl;
-			pushCommand("ADD B C"); //wartosc rejestru b - indeks w memory odpowiedniego tab[i]
+			pushCommand("LOAD D");
+			pushCommand("ADD B D");
+			pushCommand("SUB B C");
+			pushCommand("INC B");
 			pushCommand("COPY A B");
 			pushCommand("LOAD B");
 		}
@@ -214,7 +237,28 @@ forbody: TO value DO commands ENDFOR {
 ;
 
 expression: value {
-	
+	Identifier ide = idStack.at(expressionArguments[0]);
+	if(ide.type == "NUM") {
+		setRegister("B", ide.name);
+		removeIdentifier(ide.name);
+	}
+	else if(ide.type == "IDE") {
+		memToRegister(ide.mem, "B");
+	}
+	else {
+		Identifier index = idStack.at(argumentsTabIndex[0]);
+		if(index.type == "NUM") {
+			long long int tabElMem = ide.mem + stoll(index.name) + 1 - ide.beginTable;
+			memToRegister(tabElMem, "B");
+			removeIdentifier(index.name);
+		}
+		else { //todoooo
+		}
+	}
+	if (!writeFlag) {
+		expressionArguments[0] = "-1";
+		argumentsTabIndex[0] = "-1";
+	}
 }
 | value ADD value {
 	
@@ -376,6 +420,23 @@ identifier: IDENT {
 }
 ;
 %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
