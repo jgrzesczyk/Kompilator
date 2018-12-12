@@ -6,6 +6,3 @@ READa;READb(a);READb(2);
 WRITEa;WRITEb(a);WRITEb(3);WRITEb(2);
 
 END
-#in 3 100 1 => a=3; b(3)=100; b(2)=1;
-#exp. out 3 100 100 1
-b(a) indkes za duzo?

@@ -123,7 +123,15 @@ command: identifier ASSIGN {
 			registerToMem("B", tabElMem);
 			removeIdentifier(index.name);
 		} else {//todo!!!!!
-			
+			memToRegister(assignTarget.mem, "C");
+			memToRegister(assignTarget.beginTable, "D");
+			memToRegister(index.mem, "A");
+			pushCommand("LOAD E");
+			pushCommand("COPY A C");
+			pushCommand("ADD A E");
+			pushCommand("SUB A D");
+			pushCommand("INC A");
+			pushCommand("STORE B");
 		}
 	}
 	else if(!assignTarget.local) {
