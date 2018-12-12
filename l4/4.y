@@ -122,15 +122,11 @@ command: identifier ASSIGN {
 			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
 			registerToMem("B", tabElMem);
 			removeIdentifier(index.name);
-		} else {//todo!!!!!
-			memToRegister(assignTarget.mem, "C");
-			memToRegister(assignTarget.beginTable, "D");
-			memToRegister(index.mem, "A");
-			pushCommand("LOAD E");
-			pushCommand("COPY A C");
-			pushCommand("ADD A E");
-			pushCommand("SUB A D");
-			pushCommand("INC A");
+		} else {
+			long long int offset0 = assignTarget.mem + 1 - assignTarget.beginTable;
+			memToRegister(index.mem, "C");
+			setRegister("A", std::to_string(offset0));
+			pushCommand("ADD A C");
 			pushCommand("STORE B");
 		}
 	}
@@ -168,15 +164,11 @@ command: identifier ASSIGN {
 			registerToMem("B", tabElMem);
 			removeIdentifier(index.name);
 		}
-		else { //DOBRZE!!!!
-			memToRegister(assignTarget.mem, "B");
-			memToRegister(assignTarget.beginTable, "C");
-			memToRegister(index.mem, "A");
-			pushCommand("LOAD D");
-			pushCommand("ADD B D");
-			pushCommand("SUB B C");
-			pushCommand("INC B");
-			pushCommand("COPY A B");
+		else {
+			long long int offset0 = assignTarget.mem + 1 - assignTarget.beginTable;
+			memToRegister(index.mem, "C");
+			setRegister("A", std::to_string(offset0));
+			pushCommand("ADD A C");
 			pushCommand("GET B");
 			pushCommand("STORE B");
 		}
@@ -209,14 +201,10 @@ command: identifier ASSIGN {
 			memToRegister(tabElMem, "B");
 			removeIdentifier(index.name);
 		} else {
-			memToRegister(assignTarget.mem, "B");
-			memToRegister(assignTarget.beginTable, "C");
-			memToRegister(index.mem, "A");
-			pushCommand("LOAD D");
-			pushCommand("ADD B D");
-			pushCommand("SUB B C");
-			pushCommand("INC B");
-			pushCommand("COPY A B");
+			long long int offset0 = ide.mem + 1 - ide.beginTable;
+			memToRegister(index.mem, "C");
+			setRegister("A", std::to_string(offset0));
+			pushCommand("ADD A C");
 			pushCommand("LOAD B");
 		}
 	}
@@ -260,7 +248,12 @@ expression: value {
 			memToRegister(tabElMem, "B");
 			removeIdentifier(index.name);
 		}
-		else { //todoooo
+		else {
+			long long int offset0 = ide.mem + 1 - ide.beginTable;
+			memToRegister(index.mem, "C");
+			setRegister("A", std::to_string(offset0));
+			pushCommand("ADD A C");
+			pushCommand("LOAD B");
 		}
 	}
 	if (!writeFlag) {
