@@ -34,6 +34,8 @@ extern FILE * yyin;
 int yylex();
 
 
+void add(Identifier a, Identifier b);
+void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
 void setRegister(std::string, std::string);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
@@ -262,7 +264,22 @@ expression: value {
 	}
 }
 | value ADD value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+	if(a.type != "ARR" && b.type != "ARR")
+		add(a, b);
+	else {
+		Identifier aI, bI;
+		if(idStack.count(argumentsTabIndex[0]) > 0)
+			aI = idStack.at(argumentsTabIndex[0]);
+		if(idStack.count(argumentsTabIndex[1]) > 0)
+			bI = idStack.at(argumentsTabIndex[1]);
+		addTab(a, b, aI, bI);
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+	}
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 | value SUB value {
 	
@@ -446,7 +463,43 @@ identifier: IDENT {
 
 
 
+void add(Identifier a, Identifier b) {
+	if(a.type == "NUM" && b.type == "NUM") {
+		long long int val = stoll(a.name) + stoll(b.name);
+        setRegister("B", std::to_string(val));
+        removeIdentifier(a.name);
+        removeIdentifier(b.name);
+	} else if((a.type == "NUM" && b.type == "IDE") || (b.type == "NUM" && a.type == "IDE")) {
+		Identifier c = ((a.type == "NUM") ? a : b);
+		Identifier d = ((a.type == "NUM") ? b : a);
+		if(stoll(c.name) <= 3) {
+			memToRegister(d.mem, "B");
+            for(int i=0; i < stoll(c.name); i++) {
+                pushCommand("INC B");
+            }
+            removeIdentifier(d.name);
+        }
+        else {
+            setRegister("B", c.name);
+			memToRegister(d.mem, "C");
+            pushCommand("ADD B C");
+            removeIdentifier(c.name);
+        }
+	} else if(a.type == "IDE" && b.type == "IDE") {
+		if(a.name == b.name) {
+            memToRegister(a.mem, "B");
+            pushCommand("ADD B B");
+        }
+        else {
+            memToRegister(a.mem, "B");
+			memToRegister(b.mem, "C");
+            pushCommand("ADD B C");
+        }
+	}
+}
+void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 
+}
 void setRegister(std::string reg, std::string number) {
 	std::cout << "do rejestru "<< reg <<" przyposuje wartosc " << number << std::endl;
     long long int n = stoll(number);
