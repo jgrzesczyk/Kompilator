@@ -498,7 +498,137 @@ void add(Identifier a, Identifier b) {
 	}
 }
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
+	if((a.type == "NUM" && b.type == "ARR") || (a.type == "ARR" && b.type == "NUM")) {
+		if(a.type == "ARR") {
+			Identifier temp = a;
+			a = b;
+			b = temp;
+			temp = aIndex;
+			aIndex = bIndex;
+			bIndex = temp;
+		}
+        if(bIndex.type == "NUM") {
+            long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
 
+			if(stoll(a.name) <= 3) {
+				memToRegister(addr, "B");
+				for(int i=0; i < stoll(a.name); i++) {
+					pushCommand("INC B");
+				}
+			}
+            else {
+                setRegister("C", a.name);
+                memToRegister(addr, "B");
+				pushCommand("ADD B C");
+            }
+
+            removeIdentifier(a.name);
+            removeIdentifier(bIndex.name);
+        }
+        else if(bIndex.type == "IDE") {
+			long long int addr0 = b.mem + 1 - b.beginTable;
+
+            memToRegister(bIndex.mem, "A");
+			pushCommand("LOAD B");
+			setRegister("A", std::to_string(addr0));
+			pushCommand("ADD A B");
+			pushCommand("LOAD B");
+
+			if(stoll(a.name) <= 3) {
+				for(int i=0; i < stoll(a.name); i++) {
+					pushCommand("INC B");
+				}
+			} else {
+                setRegister("C", a.name);
+				pushCommand("ADD B C");
+            }
+
+            removeIdentifier(a.name);
+        }
+    }//todo do tej pory zrobione
+    else if(a.type == "IDE" && b.type == "ARR") {
+        if(bIndex.type == "NUM") {
+            long long int addr = b.mem + stoll(bIndex.name) + 1;
+            memToRegister(a.mem);
+            pushCommandOneArg("ADD", addr);
+            removeIdentifier(bIndex.name);
+        }
+        else if(bIndex.type == "IDE") {
+            memToRegister(b.mem);
+            pushCommandOneArg("ADD", bIndex.mem);
+            registerToMem(1);
+            memToRegister(a.mem);
+            pushCommandOneArg("ADDI", 1);
+        }
+    }
+    else if(a.type == "ARR" && b.type == "IDE") {
+        if(aIndex.type == "NUM") {
+            long long int addr = a.mem + stoll(aIndex.name) + 1;
+            memToRegister(b.mem);
+            pushCommandOneArg("ADD", addr);
+            removeIdentifier(aIndex.name);
+        }
+        else if(aIndex.type == "IDE") {
+            memToRegister(a.mem);
+            pushCommandOneArg("ADD", aIndex.mem);
+            registerToMem(1);
+            memToRegister(b.mem);
+            pushCommandOneArg("ADDI", 1);
+        }
+    }
+    else if(a.type == "ARR" && b.type == "ARR") {
+        if(aIndex.type == "NUM" && bIndex.type == "NUM") {
+            long long int addrA = a.mem + stoll(aIndex.name) + 1;
+            long long int addrB = b.mem + stoll(bIndex.name) + 1;
+            if(a.name == b.name && addrA == addrB) {
+                memToRegister(addrA);
+                pushCommand("SHL");
+            }
+            else {
+                memToRegister(addrA);
+                pushCommandOneArg("ADD", addrB);
+            }
+            removeIdentifier(aIndex.name);
+            removeIdentifier(bIndex.name);
+        }
+        else if(aIndex.type == "NUM" && bIndex.type == "IDE") {
+            long long int addrA = a.mem + stoll(aIndex.name) + 1;
+            memToRegister(b.mem);
+            pushCommandOneArg("ADD", bIndex.mem);
+            registerToMem(1);
+            memToRegister(addrA);
+            pushCommandOneArg("ADDI", 1);
+            removeIdentifier(aIndex.name);
+        }
+        else if(aIndex.type == "IDE" && bIndex.type == "NUM") {
+            long long int addrB = b.mem + stoll(bIndex.name) + 1;
+            memToRegister(a.mem);
+            pushCommandOneArg("ADD", aIndex.mem);
+            registerToMem(1);
+            memToRegister(addrB);
+            pushCommandOneArg("ADDI", 1);
+            removeIdentifier(bIndex.name);
+        }
+        else if(aIndex.type == "IDE" && bIndex.type == "IDE") {
+            if(a.name == b.name && aIndex.name == bIndex.name) {
+                memToRegister(a.mem);
+                pushCommandOneArg("ADD", aIndex.mem);
+                registerToMem(1);
+                pushCommandOneArg("LOADI", 1);
+                pushCommand("SHL");
+            }
+            else {
+                memToRegister(a.mem);
+                pushCommandOneArg("ADD", aIndex.mem);
+                registerToMem(1);
+                memToRegister(b.mem);
+                pushCommandOneArg("ADD", bIndex.mem);
+                registerToMem(0);
+                pushCommandOneArg("LOADI", 1);
+                pushCommandOneArg("ADDI", 0);
+            }
+        }
+    }
 }
 void setRegister(std::string reg, std::string number) {
 	std::cout << "do rejestru "<< reg <<" przyposuje wartosc " << number << std::endl;

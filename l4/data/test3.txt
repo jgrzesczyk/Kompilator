@@ -1,17 +1,16 @@
 DECLARE
-_a;b;c;d;e;f;g;IN
+_a;b;c;d(1:2);e;f;g;IN
 _a := 11;
-b := 12;
+b := 2;
 c := 10+12;
-d := 10+_a;
-e := _a+11;
-f := _a+b;
+d(2) := 10+_a;
+e := 11+d(2);
+f := _a+d(b);
 g := _a+100;
 
 WRITE_a;
 WRITEb;
 WRITEc;
-WRITEd;
 WRITEe;
 WRITEf;
 WRITEg;
