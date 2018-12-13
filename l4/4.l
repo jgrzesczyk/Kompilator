@@ -11,8 +11,9 @@ int yylex();
 
 "[" { BEGIN(COMMENT); }
 <COMMENT>"]" { BEGIN(INITIAL); }
+<COMMENT>"[" { printf("Błąd [około linii %d]: próba zagnieżdżenia komentarza.\n",yylineno); exit(1); }
 <COMMENT>(\n|.) ;
-<COMMENT><<EOF>> { printf("Błąd: niezakończony komentarz.\n"); yyterminate(); }
+<COMMENT><<EOF>> { printf("Błąd: niezakończony komentarz.\n"); exit(1); }
 
 ":=" {return ASSIGN;}
 "!=" {return NEQ;}

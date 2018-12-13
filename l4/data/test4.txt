@@ -1,7 +1,6 @@
 DECLARE
 a;b;c;d(1:2);e;g;h(24:27);
 
-
 IN
 a := 1;
 b := 2;
@@ -11,26 +10,56 @@ d(2) := 10;
 d(1) := 16;
 h(24) := 112;
 h(27) := 612;
-g := 2-3;
+g := 2-3;[0]
 WRITEg;
-g := 12-3;
+g := 12-3;[9]
 WRITEg;
-g := 3-c;
+g := 3-c;[0]
 WRITEg;
-g := 3-a;
+g := 3-a;[2]
 WRITEg;
-g := c-3;
+g := c-3;[21]
 WRITEg;
-g := a-3;
+g := a-3;[0]
 WRITEg;
-g := a-c;
+g := a-c;[0]
 WRITEg;
-g := c-a;
+g := c-a;[23]
 WRITEg;
-g := c-c;
+g := c-c;[0]
 WRITEg;
 
-[
+g := 21-d(1); [5]
+WRITEg;
+g := 113-h(c); [1]
+WRITEg;
+
+g := d(1)-12; [4]
+WRITEg;
+
+g := h(c)-110; [2]
+WRITEg;
+
+g := e-d(2);[17]
+WRITEg;
+g := e-d(a);[11]
+WRITEg;
+g := h(27)-e; [585]
+WRITEg;
+g := h(c)-e; [85]
+WRITEg;
+g := h(27)-h(24); [500]
+WRITEg;
+g := h(24)-d(b); [102]
+WRITEg;
+g := h(e)-d(2); [602]
+WRITEg;
+g := h(e)-d(a); [596]
+WRITEg;[
+
+
+
+
 g := c-e;
 WRITEg;
 g := c-c;
