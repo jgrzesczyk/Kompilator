@@ -1,0 +1,69 @@
+DECLARE
+a;b;c;d(1:2);e;g;h(24:27);
+
+
+IN
+a := 1;
+b := 2;
+c := 24;
+e := 27;
+d(2) := 10;
+d(1) := 16;
+h(24) := 112;
+h(27) := 612;
+g := 2-3;
+WRITEg;
+g := 12-3;
+WRITEg;
+g := 3-c;
+WRITEg;
+g := 3-a;
+WRITEg;
+g := c-3;
+WRITEg;
+g := a-3;
+WRITEg;
+g := a-c;
+WRITEg;
+g := c-a;
+WRITEg;
+g := c-c;
+WRITEg;
+
+[
+g := c-e;
+WRITEg;
+g := c-c;
+WRITEg;
+
+g := 2-d(2);
+WRITEg;
+g := d(1)-3;
+WRITEg;
+g := d(b)-11;
+WRITEg;
+g := 12-d(b);
+WRITEg;
+
+
+g := e-d(2);
+WRITEg;
+g := d(1)-e;
+WRITEg;
+g := d(b)-e;
+WRITEg;
+g := e-h(c);
+WRITEg;
+
+g := h(24)-h(27);
+WRITEg;
+g := h(c)-h(24);
+WRITEg;
+g := h(27)-d(b);
+WRITEg;
+g := h(c)-h(c);
+WRITEg;
+g := h(c)-d(b);
+WRITEg;
+]
+END

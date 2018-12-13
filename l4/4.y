@@ -36,6 +36,8 @@ int yylex();
 
 void add(Identifier a, Identifier b);
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
+void sub(Identifier, Identifier, int, int);
+void subTab(Identifier, Identifier, Identifier, Identifier, int, int);
 void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg);
 void arrayIndexToRegister(Identifier tab, long long int index, std::string reg);
 void setRegister(std::string, std::string);
@@ -280,7 +282,22 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value SUB value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+	if(a.type != "ARR" && b.type != "ARR")
+		sub(a, b, 0, 1);
+	else {
+		Identifier aI, bI;
+		if(idStack.count(argumentsTabIndex[0]) > 0)
+			aI = idStack.at(argumentsTabIndex[0]);
+		if(idStack.count(argumentsTabIndex[1]) > 0)
+			bI = idStack.at(argumentsTabIndex[1]);
+		subTab(a, b, aI, bI, 0, 1);
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+	}
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 | value MUL value {
 	
@@ -459,7 +476,235 @@ identifier: IDENT {
 
 
 
+void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
+	
+    if(a.type == "NUM" && b.type == "NUM") {
+        long long int val = std::max(stoll(a.name) + isINC - stoll(b.name), (long long int) 0);
+        setRegister("B", std::to_string(val));
+        if(isRemoval) {
+            removeIdentifier(a.name);
+            removeIdentifier(b.name);
+        }
+    }
+    else if(a.type == "NUM" && b.type == "IDE") {
+        setRegister("B", std::to_string(stoll(a.name) + isINC));
+		memToRegister(b.mem, "C");
+        pushCommand("SUB B C");
+        if(isRemoval)
+            removeIdentifier(a.name);
+    }
+    else if(a.type == "IDE" && b.type == "NUM") {
+        setRegister("C", b.name);
+		memToRegister(a.mem, "B");
+		if(isINC) {
+			pushCommand("INC B");
+		}
+        pushCommand("SUB B C");
+        if(isRemoval)
+            removeIdentifier(b.name);
+    }
+    else if(a.type == "IDE" && b.type == "IDE") {
+        if(a.name == b.name) {
+            pushCommand("SUB B B");
+            if(isINC)
+                pushCommand("INC B");
+        }
+        else {
+            memToRegister(a.mem, "B");
+			memToRegister(b.mem, "C");
+            if(isINC)
+                pushCommand("INC B");
+            pushCommand("SUB B C");
+        }
+    }
+}
 
+ void subTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex, int isINC, int isRemoval) {
+//     if(a.type == "NUM" && b.type == "ARR") {
+//         if(bIndex.type == "NUM") {
+//             long long int addr = b.mem + stoll(bIndex.name) + 1;
+//             setRegister(to_string(stoll(a.name) + isINC));
+//             pushCommandOneArg("SUB", addr);
+//             if(isRemoval) {
+//                 removeIdentifier(a.name);
+//                 removeIdentifier(bIndex.name);
+//             }
+//         }
+//         else if(bIndex.type == "IDE") {
+//             memToRegister(b.mem);
+//             pushCommandOneArg("ADD", bIndex.mem);
+//             registerToMem(1);
+//             setRegister(to_string(stoll(a.name) + isINC));
+//             pushCommandOneArg("SUBI", 1);
+//             if(isRemoval)
+//                 removeIdentifier(a.name);
+//         }
+//     }
+//     else if(a.type == "ARR" && b.type == "NUM") {
+//         if(aIndex.type == "NUM") {
+//             long long int addr = a.mem + stoll(aIndex.name) + 1;
+//             //this is harder -- what is going on here -- i feel lost in my own code
+//             //just think I have made too many options... ok let's opt
+//             if(stoll(b.name) < 28) {
+//                 memToRegister(addr);
+//                 if(stoll(b.name)==0 && isINC)
+//                     pushCommand("INC");
+//                 else {
+//                     for(int i=0; i < stoll(b.name) - isINC; i++) {
+//                         pushCommand("DEC");
+//                     }
+//                 }
+//             }
+//             else {
+//                 setRegister(b.name);
+//                 registerToMem(3);
+//                 memToRegister(addr);
+//                 if(isINC)
+//                     pushCommand("INC");
+//                 pushCommandOneArg("SUB", 3);
+//             }
+//             if(isRemoval) {
+//                 removeIdentifier(b.name);
+//                 removeIdentifier(aIndex.name);
+//             }
+//         }
+//         else if(aIndex.type == "IDE") {
+//             //this is harder -- what is going on here -- i feel lost in my own code
+//             //just think I have made too many options... ok let's opt
+//             if(stoll(b.name) < 28) {
+//                 memToRegister(a.mem);
+//                 pushCommandOneArg("ADD", aIndex.mem);
+//                 registerToMem(1);
+//                 pushCommandOneArg("LOADI", 1);
+
+//                 if(stoll(b.name)==0 && isINC)
+//                     pushCommand("INC");
+//                 else {
+//                     for(int i=0; i < stoll(b.name) - isINC; i++) {
+//                         pushCommand("DEC");
+//                     }
+//                 }
+//             }
+//             else {
+//                 setRegister(b.name);
+//                 registerToMem(3);
+//                 memToRegister(a.mem);
+//                 pushCommandOneArg("ADD", aIndex.mem);
+//                 registerToMem(1);
+//                 pushCommandOneArg("LOADI", 1);
+//                 if(isINC)
+//                     pushCommand("INC");
+//                 pushCommandOneArg("SUB", 3);
+//             }
+//             if(isRemoval)
+//                 removeIdentifier(b.name);
+//         }
+//     }
+//     else if(a.type == "IDE" && b.type == "ARR") {
+//         if(bIndex.type == "NUM") {
+//             long long int addr = b.mem + stoll(bIndex.name) + 1;
+//             memToRegister(a.mem);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUB", addr);
+//             if(isRemoval)
+//                 removeIdentifier(bIndex.name);
+//         }
+//         else if(bIndex.type == "IDE") {
+//             memToRegister(b.mem);
+//             pushCommandOneArg("ADD", bIndex.mem);
+//             registerToMem(1);
+//             memToRegister(a.mem);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUBI", 1);
+//         }
+//     }
+//     else if(a.type == "ARR" && b.type == "IDE") {
+//         if(aIndex.type == "NUM") {
+//             long long int addr = a.mem + stoll(aIndex.name) + 1;
+//             memToRegister(addr);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUB", b.mem);
+//             if(isRemoval)
+//                 removeIdentifier(aIndex.name);
+//         }
+//         else if(aIndex.type == "IDE") {
+//             memToRegister(a.mem);
+//             pushCommandOneArg("ADD", aIndex.mem);
+//             registerToMem(1);
+//             pushCommandOneArg("LOADI", 1);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUB", b.mem);
+//         }
+//     }
+//     else if(a.type == "ARR" && b.type == "ARR") {
+//         if(aIndex.type == "NUM" && bIndex.type == "NUM") {
+//             long long int addrA = a.mem + stoll(aIndex.name) + 1;
+//             long long int addrB = b.mem + stoll(bIndex.name) + 1;
+//             if(a.name == b.name && addrA == addrB) {
+//                 pushCommand("ZERO");
+//                 if(isINC)
+//                     pushCommand("INC");
+//             }
+//             else {
+//                 memToRegister(addrA);
+//                 if(isINC)
+//                     pushCommand("INC");
+//                 pushCommandOneArg("SUB", addrB);
+//             }
+//             if(isRemoval) {
+//                 removeIdentifier(aIndex.name);
+//                 removeIdentifier(bIndex.name);
+//             }
+//         }
+//         else if(aIndex.type == "NUM" && bIndex.type == "IDE") {
+//             long long int addrA = a.mem + stoll(aIndex.name) + 1;
+//             memToRegister(b.mem);
+//             pushCommandOneArg("ADD", bIndex.mem);
+//             registerToMem(1);
+//             memToRegister(addrA);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUBI", 1);
+//             if(isRemoval)
+//                 removeIdentifier(aIndex.name);
+//         }
+//         else if(aIndex.type == "IDE" && bIndex.type == "NUM") {
+//             long long int addrB = b.mem + stoll(bIndex.name) + 1;
+//             memToRegister(a.mem);
+//             pushCommandOneArg("ADD", aIndex.mem);
+//             registerToMem(1);
+//             pushCommandOneArg("LOADI", 1);
+//             if(isINC)
+//                 pushCommand("INC");
+//             pushCommandOneArg("SUB", addrB);
+//             if(isRemoval)
+//                 removeIdentifier(bIndex.name);
+//         }
+//         else if(aIndex.type == "IDE" && bIndex.type == "IDE") {
+//             if(a.name == b.name && aIndex.name == bIndex.name) {
+//                 pushCommand("ZERO");
+//                 if(isINC)
+//                     pushCommand("INC");
+//             }
+//             else {
+//                 memToRegister(a.mem);
+//                 pushCommandOneArg("ADD", aIndex.mem);
+//                 registerToMem(1);
+//                 memToRegister(b.mem);
+//                 pushCommandOneArg("ADD", bIndex.mem);
+//                 registerToMem(0);
+//                 pushCommandOneArg("LOADI", 1);
+//                 if(isINC)
+//                     pushCommand("INC");
+//                 pushCommandOneArg("SUBI", 0);
+//             }
+//         }
+//     }
+}
 
 void add(Identifier a, Identifier b) {
 	if(a.type == "NUM" && b.type == "NUM") {
@@ -563,7 +808,7 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 			memToRegister(a.mem, "C");
 			pushCommand("ADD B C");
         }
-    }//todo do tej pory zrobione 
+    }
     else if(a.type == "ARR" && b.type == "ARR") {
         if(aIndex.type == "NUM" && bIndex.type == "NUM") {// a(2)+a(3)
             long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
