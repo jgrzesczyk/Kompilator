@@ -36,6 +36,8 @@ int yylex();
 
 void add(Identifier a, Identifier b);
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
+void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg);
+void arrayIndexToRegister(Identifier tab, long long int index, std::string reg);
 void setRegister(std::string, std::string);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
@@ -125,10 +127,12 @@ command: identifier ASSIGN {
 			registerToMem("B", tabElMem);
 			removeIdentifier(index.name);
 		} else {
-			long long int offset0 = assignTarget.mem + 1 - assignTarget.beginTable;
+			long long int offset = assignTarget.mem + 1;
 			memToRegister(index.mem, "C");
-			setRegister("A", std::to_string(offset0));
+			setRegister("A", std::to_string(offset));
+			setRegister("D", std::to_string(assignTarget.beginTable));
 			pushCommand("ADD A C");
+			pushCommand("SUB A D");
 			pushCommand("STORE B");
 		}
 	}
@@ -167,10 +171,12 @@ command: identifier ASSIGN {
 			removeIdentifier(index.name);
 		}
 		else {
-			long long int offset0 = assignTarget.mem + 1 - assignTarget.beginTable;
+			long long int offset = assignTarget.mem + 1;
 			memToRegister(index.mem, "C");
-			setRegister("A", std::to_string(offset0));
+			setRegister("A", std::to_string(offset));
+			setRegister("D", std::to_string(assignTarget.beginTable));
 			pushCommand("ADD A C");
+			pushCommand("SUB A D");
 			pushCommand("GET B");
 			pushCommand("STORE B");
 		}
@@ -203,11 +209,7 @@ command: identifier ASSIGN {
 			memToRegister(tabElMem, "B");
 			removeIdentifier(index.name);
 		} else {
-			long long int offset0 = ide.mem + 1 - ide.beginTable;
-			memToRegister(index.mem, "C");
-			setRegister("A", std::to_string(offset0));
-			pushCommand("ADD A C");
-			pushCommand("LOAD B");
+			arrayIndexToRegister(ide, index, "B");
 		}
 	}
 	pushCommand("PUT B"); //todo many register
@@ -251,11 +253,7 @@ expression: value {
 			removeIdentifier(index.name);
 		}
 		else {
-			long long int offset0 = ide.mem + 1 - ide.beginTable;
-			memToRegister(index.mem, "C");
-			setRegister("A", std::to_string(offset0));
-			pushCommand("ADD A C");
-			pushCommand("LOAD B");
+			arrayIndexToRegister(ide, index,"B");
 		}
 	}
 	if (!writeFlag) {
@@ -477,7 +475,7 @@ void add(Identifier a, Identifier b) {
             for(int i=0; i < stoll(c.name); i++) {
                 pushCommand("INC B");
             }
-            removeIdentifier(d.name);
+            removeIdentifier(c.name);
         }
         else {
             setRegister("B", c.name);
@@ -498,6 +496,7 @@ void add(Identifier a, Identifier b) {
 	}
 }
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
+	
 	if((a.type == "NUM" && b.type == "ARR") || (a.type == "ARR" && b.type == "NUM")) {
 		if(a.type == "ARR") {
 			Identifier temp = a;
@@ -507,7 +506,7 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 			aIndex = bIndex;
 			bIndex = temp;
 		}
-        if(bIndex.type == "NUM") {
+        if(bIndex.type == "NUM") { //  1+d(2)
             long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
 
 			if(stoll(a.name) <= 3) {
@@ -525,14 +524,9 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
             removeIdentifier(a.name);
             removeIdentifier(bIndex.name);
         }
-        else if(bIndex.type == "IDE") {
-			long long int addr0 = b.mem + 1 - b.beginTable;
+        else if(bIndex.type == "IDE") { //1+d(b)
 
-            memToRegister(bIndex.mem, "A");
-			pushCommand("LOAD B");
-			setRegister("A", std::to_string(addr0));
-			pushCommand("ADD A B");
-			pushCommand("LOAD B");
+            arrayIndexToRegister(b, bIndex, "B");
 
 			if(stoll(a.name) <= 3) {
 				for(int i=0; i < stoll(a.name); i++) {
@@ -545,91 +539,93 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 
             removeIdentifier(a.name);
         }
-    }//todo do tej pory zrobione
-    else if(a.type == "IDE" && b.type == "ARR") {
-        if(bIndex.type == "NUM") {
-            long long int addr = b.mem + stoll(bIndex.name) + 1;
-            memToRegister(a.mem);
-            pushCommandOneArg("ADD", addr);
-            removeIdentifier(bIndex.name);
-        }
-        else if(bIndex.type == "IDE") {
-            memToRegister(b.mem);
-            pushCommandOneArg("ADD", bIndex.mem);
-            registerToMem(1);
-            memToRegister(a.mem);
-            pushCommandOneArg("ADDI", 1);
-        }
     }
-    else if(a.type == "ARR" && b.type == "IDE") {
-        if(aIndex.type == "NUM") {
-            long long int addr = a.mem + stoll(aIndex.name) + 1;
-            memToRegister(b.mem);
-            pushCommandOneArg("ADD", addr);
-            removeIdentifier(aIndex.name);
+    else if((a.type == "IDE" && b.type == "ARR") | (a.type == "ARR" && b.type == "IDE") ) {
+		Identifier cIndex;
+		if(a.type == "ARR") {
+			Identifier temp = a;
+			a = b;
+			b = temp;
+			cIndex = aIndex;
+		} else {
+			cIndex = bIndex;
+		}
+    
+        if(cIndex.type == "NUM") { // a + d(1)
+			long long int addr = b.mem + stoll(cIndex.name) + 1 - b.beginTable;
+			memToRegister(a.mem, "B");
+			memToRegister(addr, "C");
+            pushCommand("ADD B C");
+            removeIdentifier(cIndex.name);
         }
-        else if(aIndex.type == "IDE") {
-            memToRegister(a.mem);
-            pushCommandOneArg("ADD", aIndex.mem);
-            registerToMem(1);
-            memToRegister(b.mem);
-            pushCommandOneArg("ADDI", 1);
+        else if(cIndex.type == "IDE") { // a + d(b)
+			arrayIndexToRegister(b, cIndex, "B"); //wartosc z tablicy
+			memToRegister(a.mem, "C");
+			pushCommand("ADD B C");
         }
-    }
+    }//todo do tej pory zrobione 
     else if(a.type == "ARR" && b.type == "ARR") {
-        if(aIndex.type == "NUM" && bIndex.type == "NUM") {
-            long long int addrA = a.mem + stoll(aIndex.name) + 1;
-            long long int addrB = b.mem + stoll(bIndex.name) + 1;
+        if(aIndex.type == "NUM" && bIndex.type == "NUM") {// a(2)+a(3)
+            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
+            long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
-                memToRegister(addrA);
-                pushCommand("SHL");
+                memToRegister(addrA, "B");
+                pushCommand("ADD B B");
             }
             else {
-                memToRegister(addrA);
-                pushCommandOneArg("ADD", addrB);
+                memToRegister(addrA, "B");
+				memToRegister(addrB, "C");
+                pushCommand("ADD B C");
             }
             removeIdentifier(aIndex.name);
             removeIdentifier(bIndex.name);
         }
-        else if(aIndex.type == "NUM" && bIndex.type == "IDE") {
-            long long int addrA = a.mem + stoll(aIndex.name) + 1;
-            memToRegister(b.mem);
-            pushCommandOneArg("ADD", bIndex.mem);
-            registerToMem(1);
-            memToRegister(addrA);
-            pushCommandOneArg("ADDI", 1);
+        else if(aIndex.type == "NUM" && bIndex.type == "IDE") { //a(2)+a(b)
+            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
+			arrayIndexToRegister(b, bIndex, "B");
+			memToRegister(addrA, "C");
+			pushCommand("ADD B C");
             removeIdentifier(aIndex.name);
         }
         else if(aIndex.type == "IDE" && bIndex.type == "NUM") {
-            long long int addrB = b.mem + stoll(bIndex.name) + 1;
-            memToRegister(a.mem);
-            pushCommandOneArg("ADD", aIndex.mem);
-            registerToMem(1);
-            memToRegister(addrB);
-            pushCommandOneArg("ADDI", 1);
+			long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+			arrayIndexToRegister(a, aIndex, "B");
+			memToRegister(addrB, "C");
+			pushCommand("ADD B C");
             removeIdentifier(bIndex.name);
         }
         else if(aIndex.type == "IDE" && bIndex.type == "IDE") {
             if(a.name == b.name && aIndex.name == bIndex.name) {
-                memToRegister(a.mem);
-                pushCommandOneArg("ADD", aIndex.mem);
-                registerToMem(1);
-                pushCommandOneArg("LOADI", 1);
-                pushCommand("SHL");
+                arrayIndexToRegister(a, aIndex, "B");
+				pushCommand("ADD B B");
             }
             else {
-                memToRegister(a.mem);
-                pushCommandOneArg("ADD", aIndex.mem);
-                registerToMem(1);
-                memToRegister(b.mem);
-                pushCommandOneArg("ADD", bIndex.mem);
-                registerToMem(0);
-                pushCommandOneArg("LOADI", 1);
-                pushCommandOneArg("ADDI", 0);
+                arrayIndexToRegister(a, aIndex, "B");
+				arrayIndexToRegister(b, bIndex, "C");
+
+				pushCommand("ADD B C");
             }
         }
     }
 }
+
+void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg) {
+	long long int offset = tab.mem + 1;
+	memToRegister(index.mem, "C");
+	setRegister("A", std::to_string(offset));
+	setRegister("D", std::to_string(tab.beginTable));
+	pushCommand("ADD A C");
+	pushCommand("SUB A D");
+	pushCommand("LOAD " + reg);
+}
+void arrayIndexToRegister(Identifier tab, long long int index, std::string reg) {
+	long long int offset = tab.mem + 1 + index;
+	setRegister("A", std::to_string(offset));
+	setRegister("D", std::to_string(tab.beginTable));
+	pushCommand("SUB A D");
+	pushCommand("LOAD " + reg);
+}
+
 void setRegister(std::string reg, std::string number) {
 	std::cout << "do rejestru "<< reg <<" przyposuje wartosc " << number << std::endl;
     long long int n = stoll(number);
