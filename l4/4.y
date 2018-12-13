@@ -27,19 +27,22 @@ typedef struct {
 
 std::vector<std::string> codeStack;
 std::map<std::string, Identifier> idStack;
+std::vector<Jump> jumpStack;
+std::vector<Identifier> forStack;
 
 int yyerror (const std::string);
 extern int yylineno;
 extern FILE * yyin;
 int yylex();
 
-
+void addInt(long long int command, long long int val);
+void createJump(Jump *j, long long int stack, long long int depth);
+long long int setToTempMem(Identifier a, Identifier aI, std::string reg, int isJZERO, int isRemoval);
 void add(Identifier a, Identifier b);
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
 void sub(Identifier, Identifier, int, int);
 void subTab(Identifier, Identifier, Identifier, Identifier, int, int);
 void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg);
-void arrayIndexToRegister(Identifier tab, long long int index, std::string reg);
 void setRegister(std::string, std::string);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
 void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
@@ -59,9 +62,6 @@ Identifier assignTarget;
 std::string tabAssignTargetIndex = "-1";
 std::string expressionArguments[2] = {"-1", "-1"};
 std::string argumentsTabIndex[2] = {"-1", "-1"};
-void deb(std::string reg) {//todo for debug
-	pushCommand("PUT " + reg);
-}
 %}
 
 %define parse.error verbose
@@ -135,9 +135,9 @@ command: identifier ASSIGN {
 			long long int offset = assignTarget.mem + 1;
 			memToRegister(index.mem, "C");
 			setRegister("A", std::to_string(offset));
-			setRegister("D", std::to_string(assignTarget.beginTable));
 			pushCommand("ADD A C");
-			pushCommand("SUB A D");
+			setRegister("C", std::to_string(assignTarget.beginTable));
+			pushCommand("SUB A C");
 			pushCommand("STORE B");
 		}
 	}
@@ -151,9 +151,13 @@ command: identifier ASSIGN {
 	idStack.at(assignTarget.name).initialized = true;
 	assignFlag = true;
 }
-| IF condition THEN commands ifbody {
-	
-}
+| IF {
+	assignFlag = false;
+	depth++;
+} condition {
+	assignFlag = true;
+} THEN commands ifbody
+
 | WHILE condition DO commands ENDWHILE {
 	
 }
@@ -178,9 +182,9 @@ command: identifier ASSIGN {
 			long long int offset = assignTarget.mem + 1;
 			memToRegister(index.mem, "C");
 			setRegister("A", std::to_string(offset));
-			setRegister("D", std::to_string(assignTarget.beginTable));
 			pushCommand("ADD A C");
-			pushCommand("SUB A D");
+			setRegister("C", std::to_string(assignTarget.beginTable));
+			pushCommand("SUB A C");
 			pushCommand("GET B");
 			pushCommand("STORE B");
 		}
@@ -224,11 +228,42 @@ command: identifier ASSIGN {
 }
 ;
 
-ifbody: ELSE commands ENDIF {
+ifbody: ELSE {
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	jumpStack.push_back(j);
+	pushCommand("JUMP");
+	long long int jumpCount = jumpStack.size()-2;
+	Jump jump = jumpStack.at(jumpCount);
+	addInt(jump.placeInStack, codeStack.size());
 
+	jumpCount--;
+	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	}
+	/*registerValue = -1;*/
+	assignFlag = true;
+} commands ENDIF {
+	addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+	jumpStack.pop_back();
+	jumpStack.pop_back();
+	if(jumpStack.size() >= 1 && jumpStack.at(jumpStack.size()-1).depth == depth) {
+		jumpStack.pop_back();
+	}
+	depth--;
+	assignFlag = true;
 }
 | ENDIF {
-
+	long long int jumpCount = jumpStack.size()-1;
+	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	jumpCount--;
+	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+	}
+	jumpStack.pop_back();
+	depth--;
+	assignFlag = 1;
 }
 ;
 
@@ -302,7 +337,94 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value MUL value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+	Identifier aI, bI;
+	if(idStack.count(argumentsTabIndex[0]) > 0)
+		aI = idStack.at(argumentsTabIndex[0]);
+	if(idStack.count(argumentsTabIndex[1]) > 0)
+		bI = idStack.at(argumentsTabIndex[1]);
+
+	if(a.type == "NUM" && b.type == "NUM") {
+		long long int val = stoll(a.name) * stoll(b.name);
+		setRegister("B", std::to_string(val));
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+	}
+	else if(a.name == "2") {//todo for sprawdzajact czy potega 2
+		if(b.type == "IDE")
+			memToRegister(b.mem, "B");
+		else if(b.type == "ARR" && bI.type == "NUM") {
+			long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+			memToRegister(addr, "B");
+			removeIdentifier(bI.name);
+		}
+		else {
+			arrayIndexToRegister(b, bI, "B");
+		}
+		pushCommand("ADD B B");
+		removeIdentifier(a.name);
+	}
+	else if(b.name == "2") {
+		if(a.type == "IDE")
+			memToRegister(a.mem, "B");
+		else if(a.type == "ARR" && aI.type == "NUM") {
+			long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+			memToRegister(addr, "B");
+			removeIdentifier(aI.name);
+		}
+		else {
+			arrayIndexToRegister(a, aI, "B");
+		}
+		pushCommand("ADD B B");
+		removeIdentifier(b.name);
+	}
+	else { //todo!
+		// setRegister("0");
+		// registerToMem(7);
+
+		// if(a.type != "ARR" && b.type != "ARR")
+		// 	sub(b, a, 0, 0);
+		// else
+		// 	subTab(b, a, bI, aI, 0, 0);
+
+		// long long int stackJ = codeStack.size();
+		// pushCommand("JZERO");
+
+		// setToTempMem(b, bI, 6, 0, 0);
+		// setToTempMem(a, aI, 5, 0, 0);
+
+		// pushCommand("JUMP");
+		// addInt(stackJ, codeStack.size());
+		// stackJ = codeStack.size()-1;
+
+		// setToTempMem(a, aI, 6, 0, 1);
+		// setToTempMem(b, bI, 5, 0, 1);
+
+		// addInt(stackJ, codeStack.size());
+
+		// /*memToRegister(5);*/
+		// stackJ = codeStack.size();
+		// pushCommandOneArg("JZERO", codeStack.size()+13);
+		// pushCommandOneArg("JODD", codeStack.size()+2);
+		// pushCommandOneArg("JUMP", codeStack.size()+4);
+		// memToRegister(7);
+		// pushCommandOneArg("ADD", 6);
+		// registerToMem(7);
+		// memToRegister(6);
+		// pushCommand("SHL");
+		// registerToMem(6);
+		// memToRegister(5);
+		// pushCommand("SHR");
+		// registerToMem(5);
+		// pushCommandOneArg("JUMP", stackJ);
+		// memToRegister(7);
+	}
+
+	argumentsTabIndex[0] = "-1";
+	argumentsTabIndex[1] = "-1";
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 | value DIV value {
 	
@@ -313,7 +435,55 @@ expression: value {
 ;
 
 condition: value EQ value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+
+	if(a.type == "NUM" && b.type == "NUM") {
+		if(stoll(a.name) == stoll(b.name))
+			setRegister("B", "1");
+		else
+			setRegister("B", "0");
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+	}
+	else {
+		Identifier aI, bI;
+		if(idStack.count(argumentsTabIndex[0]) > 0)
+			aI = idStack.at(argumentsTabIndex[0]);
+		if(idStack.count(argumentsTabIndex[1]) > 0)
+			bI = idStack.at(argumentsTabIndex[1]);
+
+		if(a.type != "ARR" && b.type != "ARR")
+			sub(b, a, 0, 0);
+		else
+			subTab(b, a, bI, aI, 0, 0);
+
+		pushCommand("JZERO B", codeStack.size()+2);
+		Jump j;
+		createJump(&j, codeStack.size(), depth);
+		jumpStack.push_back(j);
+		pushCommand("JUMP");
+
+		if(a.type != "ARR" && b.type != "ARR")
+			sub(a, b, 0, 1);
+		else
+			subTab(a, b, aI, bI, 0, 1);
+
+		pushCommand("JZERO B", codeStack.size()+2);
+		Jump jj;
+		createJump(&jj, codeStack.size(), depth);
+		jumpStack.push_back(jj);
+		pushCommand("JUMP");
+	}
+
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
+	argumentsTabIndex[0] = "-1";
+	argumentsTabIndex[1] = "-1";
 }
 | value NEQ value {
 	
@@ -474,9 +644,60 @@ identifier: IDENT {
 
 
 
+void createJump(Jump *j, long long int stack, long long int depth) {
+    j->placeInStack = stack;
+    j->depth = depth;
+}
 
+long long int setToTempMem(Identifier a, Identifier aI, std::string reg, int isJZERO, int isRemoval) { //todo!
+	
+	long long int mem = 0;
+    // if(a.type == "NUM") {
+    //     setRegister(a.name);
+    //     if(isJZERO) {
+    //         mem = codeStack.size();
+    //         pushCommand("JZERO");
+    //     }
+    //     registerToMem(tempMem);
+    //     if(isRemoval)
+    //         removeIdentifier(a.name);
+    // }
+    // else if(a.type == "IDE") {
+    //     memToRegister(a.mem);
+    //     if(isJZERO) {
+    //         mem = codeStack.size();
+    //         pushCommand("JZERO"); //JZERO END
+    //     }
+    //     registerToMem(tempMem);
+    // }
+    // else if(a.type == "ARR" && aI.type == "NUM") {
+    //     long long int addr = a.mem + stoll(aI.name) + 1;
+    //     memToRegister(addr);
+    //     if(isJZERO) {
+    //         mem = codeStack.size();
+    //         pushCommand("JZERO"); //JZERO END
+    //     }
+    //     registerToMem(tempMem);
+    //     if(isRemoval)
+    //         removeIdentifier(aI.name);
+    // }
+    // else if(a.type == "ARR" && aI.type == "IDE") {
+    //     memToRegister(a.mem);
+    //     pushCommandOneArg("ADD", aI.mem);
+    //     registerToMem(tempMem);
+    //     pushCommandOneArg("LOADI", tempMem);
+    //     if(isJZERO) {
+    //         mem = codeStack.size();
+    //         pushCommand("JZERO"); //JZERO END
+    //     }
+    //     registerToMem(tempMem);
+    // }
+    return mem;
+}
 
-
+void addInt(long long int command, long long int val) {
+    codeStack.at(command) = codeStack.at(command) + " " + std::to_string(val);
+}
 
 void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
 	
@@ -818,16 +1039,9 @@ void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg) {
 	long long int offset = tab.mem + 1;
 	memToRegister(index.mem, "C");
 	setRegister("A", std::to_string(offset));
-	setRegister("D", std::to_string(tab.beginTable));
 	pushCommand("ADD A C");
-	pushCommand("SUB A D");
-	pushCommand("LOAD " + reg);
-}
-void arrayIndexToRegister(Identifier tab, long long int index, std::string reg) {
-	long long int offset = tab.mem + 1 + index;
-	setRegister("A", std::to_string(offset));
-	setRegister("D", std::to_string(tab.beginTable));
-	pushCommand("SUB A D");
+	setRegister("C", std::to_string(tab.beginTable));
+	pushCommand("SUB A C");
 	pushCommand("LOAD " + reg);
 }
 

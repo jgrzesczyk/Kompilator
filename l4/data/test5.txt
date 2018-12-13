@@ -1,0 +1,33 @@
+DECLARE
+a;b;c;d(1:2);e;g;h(3:4);
+
+IN
+a := 1;
+b := 2;
+c := 3;
+e := 4;
+d(1) := 5;
+d(2) := 6;
+h(3) := 7;
+h(4) := 7;
+
+g := 3*2;[6]
+WRITEg;
+g := 2*d(1);[10]
+WRITEg;
+g := 2*d(b);[12]
+WRITEg;
+g := 2*c;[6]
+WRITEg;
+g := d(1)*2;[10]
+WRITEg;
+g := c*2;[6]
+WRITEg;
+g := d(b)*2;[12]
+WRITEg;
+
+IF 7=h(e) THEN
+WRITE c;
+
+ENDIF
+END
