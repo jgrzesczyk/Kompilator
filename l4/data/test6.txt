@@ -2,24 +2,20 @@ DECLARE
 a;b;c;d(1:2);e;g;h(3:4);
 
 IN
-a := 152;
+a := 153;
 e := 4;
 g := 3;
-h(4) := 152;
+h(4) := 222;
 h(3) := 22;
 
-c := a%h(g);
+c := a/h(g);
 WRITE c;
-c := e%h(e);
+c := h(4)/h(3);
 WRITE c;
-c := h(g)%e;
+c := h(4)%h(3);
 WRITE c;
-c := h(g)%h(g);
+c := h(e)/a;
 WRITE c;
-a := h(4)+h(3);
-a := a+a;
-WRITE a;
-WRITE h(3);
-c := a%h(3);
+c := h(e)%a;
 WRITE c;
 END

@@ -236,17 +236,15 @@ ifbody: ELSE {
 	long long int jumpCount = jumpStack.size()-2;
 	Jump jump = jumpStack.at(jumpCount);
 	addInt(jump.placeInStack, codeStack.size());
-std::cout << "else - dodaje jump do " << jump.placeInStack << " na " << codeStack.size() << "\n";
+	
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		std::cout << "else - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
 	}
 	/*registerValue = -1;*/
 	assignFlag = true;
 } commands ENDIF {
 	addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-	std::cout << "end else -dodaje jump do " << jumpStack.at(jumpStack.size()-1).placeInStack << " na " << codeStack.size() << "\n";
 
 	jumpStack.pop_back();
 	jumpStack.pop_back();
@@ -259,13 +257,10 @@ std::cout << "else - dodaje jump do " << jump.placeInStack << " na " << codeStac
 | ENDIF {
 	long long int jumpCount = jumpStack.size()-1;
 	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-	std::cout << "end - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
 
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		std::cout << "end - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
-
 		jumpStack.pop_back();
 	}
 	jumpStack.pop_back();
@@ -423,7 +418,104 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value DIV value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+	Identifier aI, bI;
+	if(idStack.count(argumentsTabIndex[0]) > 0)
+		aI = idStack.at(argumentsTabIndex[0]);
+	if(idStack.count(argumentsTabIndex[1]) > 0)
+		bI = idStack.at(argumentsTabIndex[1]);
+
+	if(b.type == "NUM" && stoll(b.name) == 0) {
+		setRegister("B", "0");
+	}
+	else if(a.type == "NUM" && stoll(a.name) == 0) {
+		setRegister("B", "0");
+	}
+	else if(a.type == "NUM" && b.type == "NUM") {
+		long long int val = stoll(a.name) / stoll(b.name);
+		setRegister("B", std::to_string(val));
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+	} else {
+		if(a.type == "NUM") {
+			setRegister("B", a.name);
+			removeIdentifier(a.name);
+		} else if(a.type == "IDE") {
+			memToRegister(a.mem, "B");
+		} else if(a.type == "ARR") {
+			if(aI.type == "IDE")
+				arrayIndexToRegister(a, aI, "B");
+			else {
+				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				memToRegister(addr, "B");
+				removeIdentifier(aI.name);
+			}
+		}
+
+		if(b.type == "NUM") {
+			setRegister("C", b.name);
+			removeIdentifier(b.name);
+		} else if(b.type == "IDE") {
+			memToRegister(b.mem, "C");
+		} else if(b.type == "ARR") {
+			if(bI.type == "IDE")
+				arrayIndexToRegister(b, bI, "C");
+			else {
+				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				memToRegister(addr, "C");
+				removeIdentifier(bI.name);
+			}
+		}
+
+		pushCommand("SUB E E"); //-
+		pushCommand("COPY D C");
+		pushCommand("SUB D B");
+		pushCommand("JZERO D",codeStack.size()+2); //lec na miejsce za jumpem
+		pushCommand("JUMP", codeStack.size()+35); //do miejsca z PUT B
+		
+		pushCommand("COPY D B");
+		pushCommand("SUB D C");
+		pushCommand("JZERO D",codeStack.size()+2);
+		pushCommand("JUMP",codeStack.size()+4); 
+		pushCommand("SUB B B");
+		pushCommand("INC B");
+		pushCommand("JUMP", codeStack.size()+28); //do PUT B
+
+		pushCommand("COPY D C");
+		pushCommand("COPY A D");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+2);
+		pushCommand("JUMP",codeStack.size()+3);
+		pushCommand("ADD D D");
+		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("COPY A C");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+2);
+		pushCommand("JUMP", codeStack.size()+10);//do put b
+		pushCommand("COPY A D");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+4);
+		pushCommand("HALF D");
+		pushCommand("ADD E E"); //-
+		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("SUB B D");
+		pushCommand("INC E"); //-
+		pushCommand("JUMP",codeStack.size()-12);
+		pushCommand("COPY A D"); //----		
+		pushCommand("SUB A C"); //-
+		pushCommand("JZERO A", codeStack.size()+4); //-
+		pushCommand("ADD E E"); //-
+		pushCommand("HALF D");//-
+		pushCommand("JUMP", codeStack.size()-5);//-
+		pushCommand("COPY B E");//-
+	}
+
+
+	argumentsTabIndex[0] = "-1";
+	argumentsTabIndex[1] = "-1";
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 | value MOD value {
 	Identifier a = idStack.at(expressionArguments[0]);
@@ -476,8 +568,6 @@ expression: value {
 			}
 		}
 
-		pushCommand("SUB D D");
-		pushCommand("SUB A A");
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
 		pushCommand("JZERO D",codeStack.size()+2); //lec na miejsce za jumpem
