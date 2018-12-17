@@ -26,7 +26,7 @@ WRITEg;
 g := d(b)*2;[12]
 WRITEg;
 
-IF 7=h(e) THEN
+IF 6=h(e) THEN
 WRITE c;
 
 ENDIF

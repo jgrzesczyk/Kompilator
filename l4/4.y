@@ -37,7 +37,6 @@ int yylex();
 
 void addInt(long long int command, long long int val);
 void createJump(Jump *j, long long int stack, long long int depth);
-long long int setToTempMem(Identifier a, Identifier aI, std::string reg, int isJZERO, int isRemoval);
 void add(Identifier a, Identifier b);
 void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
 void sub(Identifier, Identifier, int, int);
@@ -232,19 +231,23 @@ ifbody: ELSE {
 	Jump j;
 	createJump(&j, codeStack.size(), depth);
 	jumpStack.push_back(j);
+	
 	pushCommand("JUMP");
 	long long int jumpCount = jumpStack.size()-2;
 	Jump jump = jumpStack.at(jumpCount);
 	addInt(jump.placeInStack, codeStack.size());
-
+std::cout << "else - dodaje jump do " << jump.placeInStack << " na " << codeStack.size() << "\n";
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		std::cout << "else - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
 	}
 	/*registerValue = -1;*/
 	assignFlag = true;
 } commands ENDIF {
 	addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+	std::cout << "end else -dodaje jump do " << jumpStack.at(jumpStack.size()-1).placeInStack << " na " << codeStack.size() << "\n";
+
 	jumpStack.pop_back();
 	jumpStack.pop_back();
 	if(jumpStack.size() >= 1 && jumpStack.at(jumpStack.size()-1).depth == depth) {
@@ -256,14 +259,18 @@ ifbody: ELSE {
 | ENDIF {
 	long long int jumpCount = jumpStack.size()-1;
 	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	std::cout << "end - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
+
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		std::cout << "end - dodaje jump do " << jumpStack.at(jumpCount).placeInStack << " na " << codeStack.size() << "\n";
+
 		jumpStack.pop_back();
 	}
 	jumpStack.pop_back();
 	depth--;
-	assignFlag = 1;
+	assignFlag = true;
 }
 ;
 
@@ -379,46 +386,35 @@ expression: value {
 		pushCommand("ADD B B");
 		removeIdentifier(b.name);
 	}
-	else { //todo!
-		// setRegister("0");
-		// registerToMem(7);
+	else {
+		if(a.type == "NUM") {
+			setRegister("B", a.name);
+		} else if(a.type == "IDE") {
+			memToRegister(a.mem, "B");
+		} else if(a.type == "ARR") {
+			arrayIndexToRegister(a, aI, "B");
+		}
 
-		// if(a.type != "ARR" && b.type != "ARR")
-		// 	sub(b, a, 0, 0);
-		// else
-		// 	subTab(b, a, bI, aI, 0, 0);
-
-		// long long int stackJ = codeStack.size();
-		// pushCommand("JZERO");
-
-		// setToTempMem(b, bI, 6, 0, 0);
-		// setToTempMem(a, aI, 5, 0, 0);
-
-		// pushCommand("JUMP");
-		// addInt(stackJ, codeStack.size());
-		// stackJ = codeStack.size()-1;
-
-		// setToTempMem(a, aI, 6, 0, 1);
-		// setToTempMem(b, bI, 5, 0, 1);
-
-		// addInt(stackJ, codeStack.size());
-
-		// /*memToRegister(5);*/
-		// stackJ = codeStack.size();
-		// pushCommandOneArg("JZERO", codeStack.size()+13);
-		// pushCommandOneArg("JODD", codeStack.size()+2);
-		// pushCommandOneArg("JUMP", codeStack.size()+4);
-		// memToRegister(7);
-		// pushCommandOneArg("ADD", 6);
-		// registerToMem(7);
-		// memToRegister(6);
-		// pushCommand("SHL");
-		// registerToMem(6);
-		// memToRegister(5);
-		// pushCommand("SHR");
-		// registerToMem(5);
-		// pushCommandOneArg("JUMP", stackJ);
-		// memToRegister(7);
+		if(b.type == "NUM") {
+			setRegister("C", b.name);
+		} else if(b.type == "IDE") {
+			memToRegister(b.mem, "C");
+		} else if(b.type == "ARR") {
+			arrayIndexToRegister(b, bI, "C");
+		}
+		pushCommand("JZERO C ",codeStack.size()+11);  //wywal na koniec
+		pushCommand("JZERO B ",codeStack.size()+10); //wywal na koniec
+		pushCommand("SUB D D");
+		pushCommand("JZERO B", codeStack.size()+9); //za while
+		pushCommand("JODD B ", codeStack.size()+2); //jesli nieparzyste
+		pushCommand("JUMP", codeStack.size()+2);
+		pushCommand("ADD D C");//to dodaj
+		pushCommand("HALF B");
+		pushCommand("ADD C C");
+		pushCommand("JUMP",codeStack.size()-6);
+		pushCommand("JUMP",codeStack.size()+2);
+		pushCommand("SUB D D");
+		pushCommand("COPY B D");	
 	}
 
 	argumentsTabIndex[0] = "-1";
@@ -430,7 +426,95 @@ expression: value {
 	
 }
 | value MOD value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+	Identifier aI, bI;
+	if(idStack.count(argumentsTabIndex[0]) > 0)
+		aI = idStack.at(argumentsTabIndex[0]);
+	if(idStack.count(argumentsTabIndex[1]) > 0)
+		bI = idStack.at(argumentsTabIndex[1]);
+
+	if(b.type == "NUM" && stoll(b.name) == 0) {
+		setRegister("B", "0");
+	}
+	else if(a.type == "NUM" && stoll(a.name) == 0) {
+		setRegister("B", "0");
+	}
+	else if(a.type == "NUM" && b.type == "NUM") {
+		long long int val = stoll(a.name) % stoll(b.name);
+		setRegister("B", std::to_string(val));
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+	} else {
+		if(a.type == "NUM") {
+			setRegister("B", a.name);
+			removeIdentifier(a.name);
+		} else if(a.type == "IDE") {
+			memToRegister(a.mem, "B");
+		} else if(a.type == "ARR") {
+			if(aI.type == "IDE")
+				arrayIndexToRegister(a, aI, "B");
+			else {
+				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				memToRegister(addr, "B");
+				removeIdentifier(aI.name);
+			}
+		}
+
+		if(b.type == "NUM") {
+			setRegister("C", b.name);
+			removeIdentifier(b.name);
+		} else if(b.type == "IDE") {
+			memToRegister(b.mem, "C");
+		} else if(b.type == "ARR") {
+			if(bI.type == "IDE")
+				arrayIndexToRegister(b, bI, "C");
+			else {
+				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				memToRegister(addr, "C");
+				removeIdentifier(bI.name);
+			}
+		}
+
+		pushCommand("SUB D D");
+		pushCommand("SUB A A");
+		pushCommand("COPY D C");
+		pushCommand("SUB D B");
+		pushCommand("JZERO D",codeStack.size()+2); //lec na miejsce za jumpem
+		pushCommand("JUMP", codeStack.size()+25); //do miejsca z PUT B
+		
+		pushCommand("COPY D B");
+		pushCommand("SUB D C");
+		pushCommand("JZERO D",codeStack.size()+2);
+		pushCommand("JUMP",codeStack.size()+3); 
+		pushCommand("SUB B B");
+		pushCommand("JUMP", codeStack.size()+19); //do PUT B
+
+		pushCommand("COPY D C");
+		pushCommand("COPY A D");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+2);
+		pushCommand("JUMP",codeStack.size()+3);
+		pushCommand("ADD D D");
+		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("COPY A C");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+2);
+		pushCommand("JUMP", codeStack.size()+8);//do put b
+		pushCommand("COPY A D");
+		pushCommand("SUB A B");
+		pushCommand("JZERO A",codeStack.size()+3);
+		pushCommand("HALF D");
+		pushCommand("JUMP",codeStack.size()-4);
+		pushCommand("SUB B D");
+		pushCommand("JUMP",codeStack.size()-10);		
+	}
+
+
+	argumentsTabIndex[0] = "-1";
+	argumentsTabIndex[1] = "-1";
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 ;
 
@@ -649,52 +733,6 @@ void createJump(Jump *j, long long int stack, long long int depth) {
     j->depth = depth;
 }
 
-long long int setToTempMem(Identifier a, Identifier aI, std::string reg, int isJZERO, int isRemoval) { //todo!
-	
-	long long int mem = 0;
-    // if(a.type == "NUM") {
-    //     setRegister(a.name);
-    //     if(isJZERO) {
-    //         mem = codeStack.size();
-    //         pushCommand("JZERO");
-    //     }
-    //     registerToMem(tempMem);
-    //     if(isRemoval)
-    //         removeIdentifier(a.name);
-    // }
-    // else if(a.type == "IDE") {
-    //     memToRegister(a.mem);
-    //     if(isJZERO) {
-    //         mem = codeStack.size();
-    //         pushCommand("JZERO"); //JZERO END
-    //     }
-    //     registerToMem(tempMem);
-    // }
-    // else if(a.type == "ARR" && aI.type == "NUM") {
-    //     long long int addr = a.mem + stoll(aI.name) + 1;
-    //     memToRegister(addr);
-    //     if(isJZERO) {
-    //         mem = codeStack.size();
-    //         pushCommand("JZERO"); //JZERO END
-    //     }
-    //     registerToMem(tempMem);
-    //     if(isRemoval)
-    //         removeIdentifier(aI.name);
-    // }
-    // else if(a.type == "ARR" && aI.type == "IDE") {
-    //     memToRegister(a.mem);
-    //     pushCommandOneArg("ADD", aI.mem);
-    //     registerToMem(tempMem);
-    //     pushCommandOneArg("LOADI", tempMem);
-    //     if(isJZERO) {
-    //         mem = codeStack.size();
-    //         pushCommand("JZERO"); //JZERO END
-    //     }
-    //     registerToMem(tempMem);
-    // }
-    return mem;
-}
-
 void addInt(long long int command, long long int val) {
     codeStack.at(command) = codeStack.at(command) + " " + std::to_string(val);
 }
@@ -850,7 +888,7 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
                 removeIdentifier(bIndex.name);
             }
         }
-        else if(aIndex.type == "NUM" && bIndex.type == "IDE") {//todo do tego miejsca done
+        else if(aIndex.type == "NUM" && bIndex.type == "IDE") {
             long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
             arrayIndexToRegister(b, bIndex, "C");
             memToRegister(addrA, "B");
