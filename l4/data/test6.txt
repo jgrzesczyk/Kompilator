@@ -1,21 +1,17 @@
 DECLARE
-a;b;c;d(1:2);e;g;h(3:4);
+a;b;c(2:3);
 
 IN
-a := 153;
-e := 4;
-g := 3;
-h(4) := 222;
-h(3) := 22;
-
-c := a/h(g);
-WRITE c;
-c := h(4)/h(3);
-WRITE c;
-c := h(4)%h(3);
-WRITE c;
-c := h(e)/a;
-WRITE c;
-c := h(e)%a;
-WRITE c;
+a := 2;
+c(a) := 10;
+c(3) := 10;
+IF c(a)<=c(3) THEN
+WRITE a;
+ENDIF
+IF a>=c(a) THEN
+WRITE c(a);
+ENDIF
+IF 5<=4 THEN
+WRITE c(3);
+ENDIF
 END

@@ -257,11 +257,12 @@ ifbody: ELSE {
 | ENDIF {
 	long long int jumpCount = jumpStack.size()-1;
 	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-
+std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value:" << codeStack.size() << "\n";
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
 		jumpStack.pop_back();
+		std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value:" << codeStack.size() << "\n";
 	}
 	jumpStack.pop_back();
 	depth--;
@@ -621,6 +622,7 @@ condition: value EQ value {
 		removeIdentifier(b.name);
 		Jump jum;
 		createJump(&jum, codeStack.size(), depth);
+		std::cout << "jump na " << codeStack.size() << " d:" << depth << "\n";
 		jumpStack.push_back(jum);
 		pushCommand("JZERO B");
 	}
@@ -660,19 +662,199 @@ condition: value EQ value {
 	argumentsTabIndex[1] = "-1";
 }
 | value NEQ value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+
+	if(a.type == "NUM" && b.type == "NUM") {
+		if(stoll(a.name) != stoll(b.name))
+			setRegister("B", "1");
+		else
+			setRegister("B", "0");
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		std::cout << "jump na " << codeStack.size() << " d:" << depth << "\n";
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+	}
+	else {
+		Identifier aI, bI;
+		if(idStack.count(argumentsTabIndex[0]) > 0)
+			aI = idStack.at(argumentsTabIndex[0]);
+		if(idStack.count(argumentsTabIndex[1]) > 0)
+			bI = idStack.at(argumentsTabIndex[1]);
+
+		if(a.type != "ARR" && b.type != "ARR")
+			sub(b, a, 0, 0);
+		else
+			subTab(b, a, bI, aI, 0, 0);
+
+		pushCommand("JZERO B", codeStack.size()+2);
+		Jump j;
+		createJump(&j, codeStack.size(), depth);
+		jumpStack.push_back(j);
+		pushCommand("JUMP");
+
+		if(a.type != "ARR" && b.type != "ARR")
+			sub(a, b, 0, 1);
+		else
+			subTab(a, b, aI, bI, 0, 1);
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size()+1);
+		jumpStack.pop_back();
+		Jump jj;
+		createJump(&jj, codeStack.size(), depth);
+		jumpStack.push_back(jj);
+		pushCommand("JZERO B");
+	}
+
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
+	argumentsTabIndex[0] = "-1";
+	argumentsTabIndex[1] = "-1";
 }
 | value LT value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
+
+	if(a.type == "NUM" && b.type == "NUM") {
+		if(stoll(a.name) < stoll(b.name))
+			setRegister("B","1");
+		else
+			setRegister("B","0");
+		removeIdentifier(a.name);
+		removeIdentifier(b.name);
+	}
+	else {
+		if(a.type != "ARR" && b.type != "ARR")
+			sub(b, a, 0, 1);
+		else {
+			Identifier aI, bI;
+			if(idStack.count(argumentsTabIndex[0]) > 0)
+				aI = idStack.at(argumentsTabIndex[0]);
+			if(idStack.count(argumentsTabIndex[1]) > 0)
+				bI = idStack.at(argumentsTabIndex[1]);
+			subTab(b, a, bI, aI, 0, 1);
+			argumentsTabIndex[0] = "-1";
+			argumentsTabIndex[1] = "-1";
+		}
+	}
+
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	jumpStack.push_back(j);
+	pushCommand("JZERO B");
+
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
 }
 | value GT value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+        Identifier b = idStack.at(expressionArguments[1]);
+
+        if(a.type == "NUM" && b.type == "NUM") {
+            if(stoll(b.name) < stoll(a.name))
+                setRegister("B", "1");
+            else
+                setRegister("B", "0");
+            removeIdentifier(a.name);
+            removeIdentifier(b.name);
+        }
+        else {
+            if(a.type != "ARR" && b.type != "ARR")
+                sub(a, b, 0, 1);
+            else {
+                Identifier aI, bI;
+                if(idStack.count(argumentsTabIndex[0]) > 0)
+                    aI = idStack.at(argumentsTabIndex[0]);
+                if(idStack.count(argumentsTabIndex[1]) > 0)
+                    bI = idStack.at(argumentsTabIndex[1]);
+                subTab(a, b, aI, bI, 0, 1);
+                argumentsTabIndex[0] = "-1";
+                argumentsTabIndex[1] = "-1";
+            }
+        }
+
+        Jump j;
+        createJump(&j, codeStack.size(), depth);
+        jumpStack.push_back(j);;
+        pushCommand("JZERO B");
+
+        expressionArguments[0] = "-1";
+        expressionArguments[1] = "-1";
 }
 | value LE value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+        Identifier b = idStack.at(expressionArguments[1]);
+
+        if(a.type == "NUM" && b.type == "NUM") {
+            if(stoll(a.name) <= stoll(b.name))
+                setRegister("B", "1");
+            else
+                setRegister("B", "0");
+            removeIdentifier(a.name);
+            removeIdentifier(b.name);
+        }
+        else {
+            if(a.type != "ARR" && b.type != "ARR")
+                sub(b, a, 1, 1);
+            else {
+                Identifier aI, bI;
+                if(idStack.count(argumentsTabIndex[0]) > 0)
+                    aI = idStack.at(argumentsTabIndex[0]);
+                if(idStack.count(argumentsTabIndex[1]) > 0)
+                    bI = idStack.at(argumentsTabIndex[1]);
+                subTab(b, a, bI, aI, 1, 1);
+                argumentsTabIndex[0] = "-1";
+                argumentsTabIndex[1] = "-1";
+            }
+        }
+
+        Jump j;
+        createJump(&j, codeStack.size(), depth);
+        jumpStack.push_back(j);
+        pushCommand("JZERO B");
+
+        expressionArguments[0] = "-1";
+        expressionArguments[1] = "-1";
 }
 | value GE value {
-	
+	Identifier a = idStack.at(expressionArguments[0]);
+        Identifier b = idStack.at(expressionArguments[1]);
+
+        if(a.type == "NUM" && b.type == "NUM") {
+            if(stoll(a.name) >= stoll(b.name))
+                setRegister("B", "1");
+            else
+                setRegister("B", "0");
+            removeIdentifier(a.name);
+            removeIdentifier(b.name);
+        }
+        else {
+            if(a.type != "ARR" && b.type != "ARR")
+                sub(a, b, 1, 1);
+            else {
+                Identifier aI, bI;
+                if(idStack.count(argumentsTabIndex[0]) > 0)
+                    aI = idStack.at(argumentsTabIndex[0]);
+                if(idStack.count(argumentsTabIndex[1]) > 0)
+                    bI = idStack.at(argumentsTabIndex[1]);
+                subTab(a, b, aI, bI, 1, 1);
+                argumentsTabIndex[0] = "-1";
+                argumentsTabIndex[1] = "-1";
+            }
+        }
+
+        Jump j;
+        createJump(&j, codeStack.size(), depth);
+        jumpStack.push_back(j);
+        pushCommand("JZERO B");
+
+        expressionArguments[0] = "-1";
+        expressionArguments[1] = "-1";
+        argumentsTabIndex[0] = "-1";
+        argumentsTabIndex[1] = "-1";
 }
 ;
 
