@@ -12,5 +12,5 @@ clean:
 	rm -rf lex.yy.c y.tab.c y.tab.h 4
 
 t:
-	./4 ./data/test6.txt ./data/myerror0.imp
+	./4 ./data/test7.txt ./data/myerror0.imp
 	./data/maszyna_rejestrowa/maszyna-rejestrowa ./data/myerror0.imp

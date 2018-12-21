@@ -156,13 +156,6 @@ command: identifier ASSIGN {
 } condition {
 	assignFlag = true;
 } THEN commands ifbody
-
-| WHILE condition DO commands ENDWHILE {
-	
-}
-| DO commands WHILE condition ENDDO {
-	
-}
 | FOR IDENT FROM value forbody {
 	
 }
@@ -225,7 +218,66 @@ command: identifier ASSIGN {
 	expressionArguments[0] = "-1";
 	argumentsTabIndex[0] = "-1";
 }
+// | WHILE {
+// 	assignFlag = false;
+// 	depth++;
+// 	Jump j;
+// 	createJump(&j, codeStack.size(), depth);
+// 	jumpStack.push_back(j);
+// } condition {
+// 	assignFlag = true;
+// } DO commands ENDWHILE {
+// 	long long int stack;
+// 	long long int jumpCount = jumpStack.size()-1;
+// 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
+// 		stack = jumpStack.at(jumpCount-2).placeInStack;
+// 		pushCommand("JUMP", stack);
+// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+// 		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
+// 		jumpStack.pop_back();
+// 	}
+// 	else {
+// 		stack = jumpStack.at(jumpCount-1).placeInStack;
+// 		pushCommand("JUMP", stack);
+// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+// 	}
+// 	jumpStack.pop_back();
+// 	jumpStack.pop_back();
+
+// 	depth--;
+// 	assignFlag = true;
+// }
+| DO {
+	assignFlag = true;
+	depth++;
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	jumpStack.push_back(j);
+} commands {
+	assignFlag = false;
+} WHILE condition {
+	long long int stack;
+	long long int jumpCount = jumpStack.size()-1;
+	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
+		stack = jumpStack.at(jumpCount-2).placeInStack;
+		pushCommand("JUMP", stack);
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+	}
+	else {
+		stack = jumpStack.at(jumpCount-1).placeInStack;
+		pushCommand("JUMP", stack);
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	}
+	jumpStack.pop_back();
+	jumpStack.pop_back();
+
+	depth--;
+	assignFlag = true;
+} ENDDO
 ;
+
 
 ifbody: ELSE {
 	Jump j;
@@ -269,6 +321,8 @@ std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value
 	assignFlag = true;
 }
 ;
+
+
 
 forbody: TO value DO commands ENDFOR {
 

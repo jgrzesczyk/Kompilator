@@ -1,0 +1,17 @@
+DECLARE
+a;b;c(2:3);i;
+
+IN
+a:=10;b:=20;c(2):=2;
+
+DO
+    WRITE b;
+    b:=b-c(2);
+    i:=1;
+    DO
+        WRITE i;
+        i:=i-1;
+    WHILE i>0 ENDDO
+WHILE b>=a ENDDO
+
+END
