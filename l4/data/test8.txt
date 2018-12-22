@@ -1,0 +1,14 @@
+DECLARE
+a;b;[c(2:3);i;]
+
+IN
+a:=10;b:=20;[c(2):=2;]
+
+FOR j FROM b DOWNTO a DO
+    b := 7;
+    FOR x FROM 12 DOWNTO j DO
+        WRITE x;
+    ENDFOR
+ENDFOR
+
+END
