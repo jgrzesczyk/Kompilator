@@ -1,0 +1,13 @@
+DECLARE
+a;b;[c(2:3);i;]
+
+IN
+a:=10;b:=20;[c(2):=2;]
+
+WHILE b>a DO
+    b:=b-1;
+    WRITE b;
+ENDWHILE
+
+
+END

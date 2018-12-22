@@ -259,35 +259,35 @@ command: identifier ASSIGN {
 	depth--;
 	assignFlag = true;
 }
-| DO {
-	assignFlag = true;
-	depth++;
-	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
-} commands {
-	assignFlag = false;
-} WHILE condition ENDDO {
-	long long int stack;
-	long long int jumpCount = jumpStack.size()-1;
-	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
-		stack = jumpStack.at(jumpCount-2).placeInStack;
-		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
-	}
-	else {
-		stack = jumpStack.at(jumpCount-1).placeInStack;
-		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-	}
-	jumpStack.pop_back();
-	jumpStack.pop_back();
+// | DO {
+// 	assignFlag = true;
+// 	depth++;
+// 	Jump j;
+// 	createJump(&j, codeStack.size(), depth);
+// 	jumpStack.push_back(j);
+// } commands {
+// 	assignFlag = false;
+// } WHILE condition ENDDO {
+// 	long long int stack;
+// 	long long int jumpCount = jumpStack.size()-1;
+// 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
+// 		stack = jumpStack.at(jumpCount-2).placeInStack;
+// 		pushCommand("JUMP", stack);
+// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+// 		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
+// 		jumpStack.pop_back();
+// 	}
+// 	else {
+// 		stack = jumpStack.at(jumpCount-1).placeInStack;
+// 		pushCommand("JUMP", stack);
+// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+// 	}
+// 	jumpStack.pop_back();
+// 	jumpStack.pop_back();
 
-	depth--;
-	assignFlag = true;
-} 
+// 	depth--;
+// 	assignFlag = true;
+// } 
 ;
 
 
@@ -701,7 +701,8 @@ expression: value {
 		pushCommand("SUB E E"); //-
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
-		pushCommand("JZERO D",codeStack.size()+2); //lec na miejsce za jumpem
+		pushCommand("JZERO D",codeStack.size()+3); //lec na miejsce za jumpem
+		pushCommand("SUB B B");
 		pushCommand("JUMP", codeStack.size()+35); //do miejsca z PUT B
 		
 		pushCommand("COPY D B");
