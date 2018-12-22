@@ -53,6 +53,7 @@ long long int valueInMemory(long long int mem);
 void memToRegister(long long int, std::string);
 std::string decToBin(long long int n);
 void registerToMem(std::string, long long int);
+int isPowerOfTwo(long long int);
 long long int memCounter;
 long long int depth;
 bool assignFlag;
@@ -661,6 +662,28 @@ expression: value {
 	}
 	else if(a.type == "NUM" && stoll(a.name) == 0) {
 		setRegister("B", "0");
+	}
+	else if(b.type == "NUM" && isPowerOfTwo(stoll(b.name)) > 0) {
+		
+		int times = isPowerOfTwo(stoll(b.name));
+		
+		if(a.type == "NUM") {
+			setRegister("B", a.name);
+			removeIdentifier(a.name);
+		} else if(a.type == "IDE") {
+			memToRegister(a.mem, "B");
+		} else if(a.type == "ARR") {
+			if(aI.type == "IDE")
+				arrayIndexToRegister(a, aI, "B");
+			else {
+				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				memToRegister(addr, "B");
+				removeIdentifier(aI.name);
+			}
+		}
+		for(int i=0; i<times; ++i) {
+			pushCommand("HALF B");
+		}
 	}
 	else if(a.type == "NUM" && b.type == "NUM") {
 		long long int val = stoll(a.name) / stoll(b.name);
@@ -1726,6 +1749,20 @@ void printCode(std::string filename) {
 	long long int i;
 	for(i = 0; i < codeStack.size(); i++)
         out_code << codeStack.at(i) << std::endl;
+}
+
+int isPowerOfTwo(long long int x) {
+	int amount = 0;
+	int nmb = 1;
+	while(nmb < x) {
+		nmb = nmb*2;
+		amount++;
+	}
+	if(nmb == x) {
+		return amount;
+	} else {
+		return -1;
+	}
 }
 
 int main (int argc, char** argv) {

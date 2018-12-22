@@ -1,8 +1,14 @@
 DECLARE
-a;b;[c(2:3);i;]
+a;b;[c(2:3);i;]j;k;
 
 IN
 a:=10;b:=20;[c(2):=2;]
+
+j:=230;
+k:=j/32;
+WRITE k;
+k:=j/33;
+WRITE k;
 
 WHILE b>a DO
     b:=b-1;
