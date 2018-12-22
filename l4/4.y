@@ -321,12 +321,10 @@ ifbody: ELSE {
 | ENDIF {
 	long long int jumpCount = jumpStack.size()-1;
 	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value:" << codeStack.size() << "\n";
 	jumpCount--;
 	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
 		jumpStack.pop_back();
-		std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value:" << codeStack.size() << "\n";
 	}
 	jumpStack.pop_back();
 	depth--;
@@ -335,8 +333,91 @@ std::cout << "dodaje int na " << jumpStack.at(jumpCount).placeInStack << " value
 ;
 
 
-forbody: TO value DO commands ENDFOR {
+forbody: TO value DO {
+	Identifier a = idStack.at(expressionArguments[0]);
+	Identifier b = idStack.at(expressionArguments[1]);
 
+	if(a.type == "NUM") {
+		setRegister("B", a.name);
+		removeIdentifier(a.name);
+	}
+	else if(a.type == "IDE") {
+		memToRegister(a.mem, "B");
+	}
+	else {
+		Identifier index = idStack.at(argumentsTabIndex[0]);
+		if(index.type == "NUM") {
+			long long int tabElMem = a.mem + stoll(index.name) + 1;
+			memToRegister(tabElMem, "B");
+			removeIdentifier(index.name);
+		}
+		else {
+			arrayIndexToRegister(a, index, "B");
+		}
+	}
+	registerToMem("B", assignTarget.mem);
+	idStack.at(assignTarget.name).initialized = true;
+
+	if(a.type != "ARR" && b.type != "ARR")
+		sub(b, a, 1, 1);
+	else {
+		Identifier aI, bI;
+		if(idStack.count(argumentsTabIndex[0]) > 0)
+			aI = idStack.at(argumentsTabIndex[0]);
+		if(idStack.count(argumentsTabIndex[1]) > 0)
+			bI = idStack.at(argumentsTabIndex[1]);
+		subTab(b, a, bI, aI, 1, 1);
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+	}
+	expressionArguments[0] = "-1";
+	expressionArguments[1] = "-1";
+
+	Identifier s;
+	std::string name = "C" + std::to_string(depth);
+	createIdentifier(&s, name, true, "IDE");
+	insertIdentifier(name, s);
+
+	registerToMem("B",idStack.at(name).mem);
+	forStack.push_back(idStack.at(assignTarget.name));
+
+	pushCommand("JZERO B");
+	Jump jj;
+	createJump(&jj, codeStack.size(), depth);
+	jumpStack.push_back(jj);
+
+	memToRegister(idStack.at(name).mem, "B");
+	
+	addInt(jumpStack.at(jumpStack.size()-1).placeInStack-1, codeStack.size());
+
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	jumpStack.push_back(j);
+	pushCommand("JZERO B");
+	pushCommand("DEC B");
+	registerToMem("B", idStack.at(name).mem);
+	assignFlag = true;
+
+} commands ENDFOR {
+	Identifier iterator = forStack.at(forStack.size()-1);
+	memToRegister(iterator.mem, "B");
+	pushCommand("INC B");
+	registerToMem("B", iterator.mem);
+
+	long long int jumpCount = jumpStack.size()-1;
+	long long int stack = jumpStack.at(jumpCount-1).placeInStack;
+	pushCommand("JUMP", stack);
+	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	jumpStack.pop_back();
+	jumpStack.pop_back();
+	
+	std::string name = "C" + std::to_string(depth);
+	removeIdentifier(name);
+	removeIdentifier(iterator.name);
+	forStack.pop_back();
+
+	depth--;
+	assignFlag = true;
 }
 | DOWNTO value DO {
 	Identifier a = idStack.at(expressionArguments[0]);
@@ -415,7 +496,7 @@ forbody: TO value DO commands ENDFOR {
 	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
 	jumpStack.pop_back();
 	jumpStack.pop_back();
-	
+
 	std::string name = "C" + std::to_string(depth);
 	removeIdentifier(name);
 	removeIdentifier(iterator.name);
@@ -1620,7 +1701,7 @@ void insertIdentifier(std::string key, Identifier i) {
     else {
         idStack.at(key).counter = idStack.at(key).counter+1;
     }
-	if(i.type != "NUM")
+	if(i.type != "s")
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << std::endl;
 }
 
