@@ -1,0 +1,59 @@
+[ program12.imp ]
+DECLARE
+    a; aa(0:5); b; c; d;
+IN
+    READ a;
+    READ b;
+    READ c;
+    READ d;
+
+    aa(0) := a / 0;
+    aa(1) := 0 / a;
+    aa(2) := 0 / 0;
+    aa(3) := a / 1;
+    aa(4) := 1 / a;
+
+    WRITE aa(0); [ 0 ]
+    WRITE aa(1); [ 0 ]
+    WRITE aa(2); [ 0 ]
+    WRITE aa(3); [ a ]
+    WRITE aa(4); [ a == 1 ? 1 : 0 ]
+
+    WRITE 1111111111;
+
+    aa(0) := a * 0;
+    aa(1) := 0 * a;
+    aa(2) := a * 1;
+    aa(3) := 1 * a;
+
+    WRITE aa(0); [ 0 ]
+    WRITE aa(1); [ 0 ]
+    WRITE aa(2); [ a ]
+    WRITE aa(3); [ a ]
+
+    WRITE 1111111111;
+
+    aa(0) := a % 0;
+    aa(1) := 0 % a;
+    aa(2) := a % 1;
+    aa(3) := 1 % a;
+
+    WRITE aa(0); [ 0 ]
+    WRITE aa(1); [ 0 ]
+    WRITE aa(2); [ 0 ]
+    WRITE aa(3); [ a < 2 ? 0 : 1 ]
+
+    WRITE 1111111111;
+
+    aa(0) := a + 1;
+    aa(1) := a - a;
+    aa(2) := a - aa(0);
+    aa(3) := aa(0) - a;
+
+    WRITE aa(0); [ a + 1 ]
+    WRITE aa(1); [ 0 ]
+    WRITE aa(2); [ 0 ]
+    WRITE aa(3); [ 1 ]
+    WRITE 1111111111;
+
+END

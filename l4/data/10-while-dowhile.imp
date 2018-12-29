@@ -1,0 +1,15 @@
+DECLARE
+a; b;
+IN
+a := 20;
+
+WHILE a>10 DO
+	a :=a-1;
+	b := a;
+	
+	DO
+		WRITE b;
+		b := b-1;
+	WHILE b>20 ENDDO
+ENDWHILE
+END

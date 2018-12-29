@@ -58,6 +58,7 @@ long long int memCounter;
 long long int depth;
 bool assignFlag;
 bool writeFlag;
+bool doWhileFlag;
 Identifier assignTarget;
 std::string tabAssignTargetIndex = "-1";
 std::string expressionArguments[2] = {"-1", "-1"};
@@ -115,6 +116,21 @@ declarations:
 		setRegister("B", std::to_string(ide.mem+1));
         registerToMem("B", ide.mem);
 	}
+}
+;
+
+newlabel: {
+	if(!doWhileFlag) {
+		assignFlag = false;
+		depth++;
+		Jump j;
+		createJump(&j, codeStack.size(), depth);
+		jumpStack.push_back(j);
+	} else {
+		assignFlag = false;
+		doWhileFlag = false;
+	}
+
 }
 ;
 
@@ -231,15 +247,7 @@ command: identifier ASSIGN {
 	expressionArguments[0] = "-1";
 	argumentsTabIndex[0] = "-1";
 }
-| WHILE {
-	assignFlag = false;
-	depth++;
-	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
-} condition {
-	assignFlag = true;
-} DO commands ENDWHILE {
+| newlabel WHILE condition{assignFlag = true;}  DO commands ENDWHILE {
 	long long int stack;
 	long long int jumpCount = jumpStack.size()-1;
 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
@@ -260,35 +268,34 @@ command: identifier ASSIGN {
 	depth--;
 	assignFlag = true;
 }
-// | DO {
-// 	assignFlag = true;
-// 	depth++;
-// 	Jump j;
-// 	createJump(&j, codeStack.size(), depth);
-// 	jumpStack.push_back(j);
-// } commands {
-// 	assignFlag = false;
-// } WHILE condition ENDDO {
-// 	long long int stack;
-// 	long long int jumpCount = jumpStack.size()-1;
-// 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
-// 		stack = jumpStack.at(jumpCount-2).placeInStack;
-// 		pushCommand("JUMP", stack);
-// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-// 		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
-// 		jumpStack.pop_back();
-// 	}
-// 	else {
-// 		stack = jumpStack.at(jumpCount-1).placeInStack;
-// 		pushCommand("JUMP", stack);
-// 		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-// 	}
-// 	jumpStack.pop_back();
-// 	jumpStack.pop_back();
+| DO {
+	doWhileFlag = true;
+	assignFlag = true;
+	depth++;
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	jumpStack.push_back(j);
+} commands newlabel WHILE condition ENDDO {
+	long long int stack;
+	long long int jumpCount = jumpStack.size()-1;
+	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
+		stack = jumpStack.at(jumpCount-2).placeInStack;
+		pushCommand("JUMP", stack);
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+	}
+	else {
+		stack = jumpStack.at(jumpCount-1).placeInStack;
+		pushCommand("JUMP", stack);
+		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	}
+	jumpStack.pop_back();
+	jumpStack.pop_back();
 
-// 	depth--;
-// 	assignFlag = true;
-// } 
+	depth--;
+	assignFlag = true;
+} 
 ;
 
 
@@ -618,7 +625,13 @@ expression: value {
 		} else if(a.type == "IDE") {
 			memToRegister(a.mem, "B");
 		} else if(a.type == "ARR") {
-			arrayIndexToRegister(a, aI, "B");
+			if(aI.type == "IDE")
+				arrayIndexToRegister(a, aI, "B");
+			else {
+				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				memToRegister(addr, "B");
+				removeIdentifier(aI.name);
+			}
 		}
 
 		if(b.type == "NUM") {
@@ -626,8 +639,15 @@ expression: value {
 		} else if(b.type == "IDE") {
 			memToRegister(b.mem, "C");
 		} else if(b.type == "ARR") {
-			arrayIndexToRegister(b, bI, "C");
+			if(bI.type == "IDE")
+				arrayIndexToRegister(b, bI, "C");
+			else {
+				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				memToRegister(addr, "C");
+				removeIdentifier(bI.name);
+			}
 		}
+		
 		pushCommand("JZERO C ",codeStack.size()+11);  //wywal na koniec
 		pushCommand("JZERO B ",codeStack.size()+10); //wywal na koniec
 		pushCommand("SUB D D");
@@ -1725,7 +1745,7 @@ void insertIdentifier(std::string key, Identifier i) {
     else {
         idStack.at(key).counter = idStack.at(key).counter+1;
     }
-	if(i.type != "s")
+	if(i.type == "s")
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << std::endl;
 }
 
@@ -1769,6 +1789,7 @@ int main (int argc, char** argv) {
 	assignFlag = true;
 	memCounter = 12;
 	writeFlag = false;
+	doWhileFlag = false;
 	depth = 0;
 
 	yyin = fopen(argv[1], "r");

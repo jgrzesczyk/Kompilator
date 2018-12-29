@@ -25,9 +25,13 @@ g := c*2;[6]
 WRITEg;
 g := d(b)*2;[12]
 WRITEg;
+g := d(1)*d(2);[30]
+WRITEg;
+g := c*e;[12]
+WRITEg;
 
-IF 6=h(e) THEN
-WRITE c;
-
+IF 6<h(e) THEN
+    WRITE c;
 ENDIF
+
 END

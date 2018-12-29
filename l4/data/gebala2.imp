@@ -1,0 +1,47 @@
+[ program13.imp ]
+DECLARE
+    aa; bb; cc; x(0:4); dd; ee;
+IN
+    READ x(0);
+    READ x(1);
+    READ x(2);
+    READ x(3);
+
+    WRITE x(0);
+    WRITE x(1);x(2) := x(2) * x(2);
+    WRITE x(2);
+    
+    WRITE x(3);
+    WRITE 999999999;
+
+
+    aa := x(0) + x(0);
+    bb := x(1) - x(1);
+    cc := x(2) * x(2);
+    dd := x(3) / x(3);
+    ee := x(3) % x(3);
+
+    WRITE 999999999;
+
+    WRITE aa; [ x(0) + x(0) ]
+    WRITE bb; [ 0 ]
+    WRITE cc; [ x(2)^2 ]
+    WRITE dd; [ x(3) == 0 > 0 : 1 ]
+    WRITE ee; [ 0 ]
+
+
+
+    aa := x(0) + x(1);
+    bb := x(1) - x(0);
+    cc := x(2) * x(3);
+    dd := x(3) / x(2);
+    ee := x(0) % x(1);
+
+    WRITE 999999999;
+
+    WRITE aa;
+    WRITE bb;
+    WRITE cc;
+    WRITE dd;
+    WRITE ee;
+END
