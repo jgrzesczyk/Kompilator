@@ -58,11 +58,14 @@ long long int memCounter;
 long long int depth;
 bool assignFlag;
 bool writeFlag;
-bool doWhileFlag;
 Identifier assignTarget;
 std::string tabAssignTargetIndex = "-1";
 std::string expressionArguments[2] = {"-1", "-1"};
 std::string argumentsTabIndex[2] = {"-1", "-1"};
+
+
+Jump tj;
+int indextj;
 %}
 
 %define parse.error verbose
@@ -119,18 +122,12 @@ declarations:
 }
 ;
 
-newlabel: {
-	if(!doWhileFlag) {
-		assignFlag = false;
-		depth++;
-		Jump j;
-		createJump(&j, codeStack.size(), depth);
-		jumpStack.push_back(j);
-	} else {
-		assignFlag = false;
-		doWhileFlag = false;
-	}
-
+newlabel: WHILE {
+	assignFlag = false;
+	Jump j;
+	createJump(&j, codeStack.size(), depth);
+	tj = j;
+	indextj = jumpStack.size();
 }
 ;
 
@@ -247,7 +244,14 @@ command: identifier ASSIGN {
 	expressionArguments[0] = "-1";
 	argumentsTabIndex[0] = "-1";
 }
-| newlabel WHILE condition{assignFlag = true;}  DO commands ENDWHILE {
+| newlabel condition {
+	assignFlag = true;
+	depth++;
+	jumpStack.insert(jumpStack.begin() + indextj, tj);
+	for(int i=indextj; i<jumpStack.size(); ++i) {
+		jumpStack[i].depth = depth;
+	}
+}  DO commands ENDWHILE {
 	long long int stack;
 	long long int jumpCount = jumpStack.size()-1;
 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
@@ -269,13 +273,13 @@ command: identifier ASSIGN {
 	assignFlag = true;
 }
 | DO {
-	doWhileFlag = true;
 	assignFlag = true;
 	depth++;
 	Jump j;
 	createJump(&j, codeStack.size(), depth);
 	jumpStack.push_back(j);
-} commands newlabel WHILE condition ENDDO {
+	std::cout << "DW";
+} commands newlabel condition ENDDO {
 	long long int stack;
 	long long int jumpCount = jumpStack.size()-1;
 	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
@@ -1787,9 +1791,8 @@ int isPowerOfTwo(long long int x) {
 
 int main (int argc, char** argv) {
 	assignFlag = true;
-	memCounter = 12;
+	memCounter = 0;
 	writeFlag = false;
-	doWhileFlag = false;
 	depth = 0;
 
 	yyin = fopen(argv[1], "r");

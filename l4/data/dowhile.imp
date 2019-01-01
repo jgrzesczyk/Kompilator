@@ -1,0 +1,22 @@
+DECLARE 
+i; j; score; k;
+IN
+score := 0;
+j := 0;
+DO
+    i:=j;
+    DO
+        score:=score+1;
+        i:=i+1;
+        k:=0;
+        WHILE k<10 DO
+            k:=k+1;
+            score:=score+1;
+        ENDWHILE
+    WHILE i<=3
+    ENDDO
+    j:=j+1;
+WHILE j<3
+ENDDO
+WRITE score;
+END

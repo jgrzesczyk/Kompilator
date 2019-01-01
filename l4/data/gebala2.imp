@@ -7,14 +7,6 @@ IN
     READ x(2);
     READ x(3);
 
-    WRITE x(0);
-    WRITE x(1);x(2) := x(2) * x(2);
-    WRITE x(2);
-    
-    WRITE x(3);
-    WRITE 999999999;
-
-
     aa := x(0) + x(0);
     bb := x(1) - x(1);
     cc := x(2) * x(2);

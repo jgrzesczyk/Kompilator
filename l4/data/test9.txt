@@ -1,0 +1,20 @@
+DECLARE
+a; b; i;
+IN
+READ a;
+i := 1;
+WHILE i <= 1000 DO
+	b := 25663607 + 41445257;
+	a := b + a;
+	i := i + 1;
+ENDWHILE
+WRITE a;
+READ a;
+FOR ii FROM 1234567830 DOWNTO 1234567830 DO
+	a := a * 1024;
+ENDFOR
+WRITE a;
+WRITE i;
+a := 1999999999 * 1999999997;
+WRITE a;
+END
