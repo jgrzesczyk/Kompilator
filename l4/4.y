@@ -278,7 +278,6 @@ command: identifier ASSIGN {
 	Jump j;
 	createJump(&j, codeStack.size(), depth);
 	jumpStack.push_back(j);
-	std::cout << "DW";
 } commands newlabel condition ENDDO {
 	long long int stack;
 	long long int jumpCount = jumpStack.size()-1;
@@ -595,7 +594,9 @@ expression: value {
 		removeIdentifier(a.name);
 		removeIdentifier(b.name);
 	}
-	else if(a.name == "2") {//todo for sprawdzajact czy potega 2
+	else if(a.type == "NUM" && isPowerOfTwo(stoll(a.name)) > 0) {
+		
+		int times = isPowerOfTwo(stoll(a.name));                                                 
 		if(b.type == "IDE")
 			memToRegister(b.mem, "B");
 		else if(b.type == "ARR" && bI.type == "NUM") {
@@ -606,10 +607,16 @@ expression: value {
 		else {
 			arrayIndexToRegister(b, bI, "B");
 		}
-		pushCommand("ADD B B");
+		for(int i=0; i<times; ++i) {
+			pushCommand("ADD B B");
+		}
+
 		removeIdentifier(a.name);
 	}
-	else if(b.name == "2") {
+	else if(b.type == "NUM" && isPowerOfTwo(stoll(b.name)) > 0) {
+		
+		int times = isPowerOfTwo(stoll(b.name));
+
 		if(a.type == "IDE")
 			memToRegister(a.mem, "B");
 		else if(a.type == "ARR" && aI.type == "NUM") {
@@ -620,7 +627,9 @@ expression: value {
 		else {
 			arrayIndexToRegister(a, aI, "B");
 		}
-		pushCommand("ADD B B");
+		for(int i=0; i<times; ++i) {
+			pushCommand("ADD B B");
+		}
 		removeIdentifier(b.name);
 	}
 	else {

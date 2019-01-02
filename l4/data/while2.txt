@@ -1,0 +1,11 @@
+DECLARE
+a; b; cond;
+IN
+
+DO
+	WRITE a;
+
+	a:=a-2;
+	cond :=a%11;
+WHILE cond!=0
+END

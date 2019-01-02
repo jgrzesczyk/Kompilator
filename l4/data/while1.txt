@@ -1,0 +1,26 @@
+DECLARE
+a; b; c;
+IN
+a := 20;
+
+WHILE a>10 DO
+	a :=a-1;
+	b := a;
+	
+	DO
+		WRITE b;
+		b := b-1;
+		WHILE b<20 DO
+			WRITE b;
+			b:=b+1;
+		ENDWHILE
+		FOR k FROM 99999 TO 100000 DO
+			WRITE k;
+			FOR _l FROM k DOWNTO 99998 DO
+				WRITE _l;
+			ENDFOR
+		ENDFOR
+	WHILE b>20 ENDDO
+	WRITE 99999999;
+ENDWHILE
+END
