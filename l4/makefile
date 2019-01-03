@@ -14,3 +14,7 @@ clean:
 t:
 	./4 ./mytests/$(arg) ./maszyna/plik.txt
 	./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
+
+gt:
+	./4 ./gebalotests/$(arg) ./maszyna/plik.txt
+	./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
