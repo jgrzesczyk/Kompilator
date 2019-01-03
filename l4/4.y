@@ -647,6 +647,11 @@ expression: value {
 			}
 		}
 
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		if(b.type == "NUM") {
 			setRegister("C", b.name);
 		} else if(b.type == "IDE") {
@@ -660,9 +665,8 @@ expression: value {
 				removeIdentifier(bI.name);
 			}
 		}
-		
-		pushCommand("JZERO C ",codeStack.size()+11);  //wywal na koniec
-		pushCommand("JZERO B ",codeStack.size()+10); //wywal na koniec
+
+		pushCommand("JZERO C ",codeStack.size()+10);  //wywal na koniec
 		pushCommand("SUB D D");
 		pushCommand("JZERO B", codeStack.size()+9); //za while
 		pushCommand("JODD B ", codeStack.size()+2); //jesli nieparzyste
@@ -672,6 +676,10 @@ expression: value {
 		pushCommand("ADD C C");
 		pushCommand("JUMP",codeStack.size()-6);
 		pushCommand("JUMP",codeStack.size()+2);
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
 		pushCommand("SUB D D");
 		pushCommand("COPY B D");	
 	}
