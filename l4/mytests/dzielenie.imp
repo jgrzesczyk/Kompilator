@@ -1,0 +1,44 @@
+DECLARE
+a; b; c(2:3);d;g;
+IN
+    a := 0;
+    b := 2;
+    c(b) := a;
+    c(3) := 3;
+    d:=1;
+
+    [a/a, b/a, c(b)/c(b), c(3)/c(3), d/a, c(3)/a, a/c(3), a/d, a/b, 0/b, 0/d, 0/a, 0/0, 0/c(3), 0/c(b)]
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    g:=a/a;
+    WRITEg;
+    g:=b/a;
+    WRITEg;
+    g:=c(b)/c(b);
+    WRITEg;
+    g:=c(3)/c(3);
+    WRITEg;
+    g:=d/a;
+    WRITEg;
+    g:=c(3)/a;
+    WRITEg;
+    g:=a/c(3);
+    WRITEg;
+    g:=a/d;
+    WRITEg;
+    g:=a/b;
+    WRITEg;
+    g:=0/d;
+    WRITEg;
+    g:=0/b;
+    WRITEg;
+    g:=0/a;
+    WRITEg;
+    g:=0/0;
+    WRITEg;
+    g:=0/c(3);
+    WRITEg;
+    g:=0/c(b);
+    WRITEg;
+    WRITE 99999999;
+    
+END
