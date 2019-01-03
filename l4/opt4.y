@@ -621,9 +621,18 @@ expression: value {
 		else {
 			arrayIndexToRegister(b, bI, "B");
 		}
+		
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
 
 		removeIdentifier(a.name);
 	}
@@ -641,9 +650,19 @@ expression: value {
 		else {
 			arrayIndexToRegister(a, aI, "B");
 		}
+		
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
 		removeIdentifier(b.name);
 	}
 	else {
@@ -660,6 +679,10 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
 
 		if(b.type == "NUM") {
 			setRegister("C", b.name);
@@ -675,8 +698,7 @@ expression: value {
 			}
 		}
 		
-		pushCommand("JZERO C ",codeStack.size()+11);  //wywal na koniec
-		pushCommand("JZERO B ",codeStack.size()+10); //wywal na koniec
+		pushCommand("JZERO C ",codeStack.size()+10);  //wywal na koniec
 		pushCommand("SUB D D");
 		pushCommand("JZERO B", codeStack.size()+9); //za while
 		pushCommand("JODD B ", codeStack.size()+2); //jesli nieparzyste
@@ -686,6 +708,9 @@ expression: value {
 		pushCommand("ADD C C");
 		pushCommand("JUMP",codeStack.size()-6);
 		pushCommand("JUMP",codeStack.size()+2);
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
 		pushCommand("SUB D D");
 		pushCommand("COPY B D");	
 	}
@@ -728,9 +753,18 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		for(int i=0; i<times; ++i) {
 			pushCommand("HALF B");
 		}
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
 	}
 	else if(a.type == "NUM" && b.type == "NUM") {
 		long long int val = stoll(a.name) / stoll(b.name);
@@ -752,6 +786,10 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
 
 		if(b.type == "NUM") {
 			setRegister("C", b.name);
@@ -767,6 +805,12 @@ expression: value {
 				removeIdentifier(bI.name);
 			}
 		}
+		
+		Jump juma;
+		createJump(&juma, codeStack.size(), depth);
+		jumpStack.push_back(juma);
+		pushCommand("JZERO C");
+
 		if(freeRegisters < 4)
 			registerToMem("E");
 
@@ -812,7 +856,15 @@ expression: value {
 		pushCommand("HALF D");//-
 		pushCommand("JUMP", codeStack.size()-5);//-
 		pushCommand("COPY B E");//-
-		
+		pushCommand("JUMP", codeStack.size()+2);
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
+		pushCommand("SUB B B");
+
 		if(freeRegisters < 4)
 			memToRegister("E");
 	}
@@ -858,6 +910,11 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
 
 		if(b.type == "NUM") {
 			setRegister("C", b.name);
@@ -873,6 +930,11 @@ expression: value {
 				removeIdentifier(bI.name);
 			}
 		}
+		
+		Jump juma;
+		createJump(&juma, codeStack.size(), depth);
+		jumpStack.push_back(juma);
+		pushCommand("JZERO C");
 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
@@ -903,7 +965,15 @@ expression: value {
 		pushCommand("HALF D");
 		pushCommand("JUMP",codeStack.size()-4);
 		pushCommand("SUB B D");
-		pushCommand("JUMP",codeStack.size()-10);		
+		pushCommand("JUMP",codeStack.size()-10);
+		pushCommand("JUMP", codeStack.size()+2);
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
+		pushCommand("SUB B B");			
 	}
 
 
@@ -1849,7 +1919,7 @@ void insertIdentifier(std::string key, Identifier i) {
     else {
         idStack.at(key).counter = idStack.at(key).counter+1;
     }
-	if(i.type != "s")
+	if(i.inRegister != "NULL")
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << " reg:" << i.inRegister << std::endl;
 }
 
