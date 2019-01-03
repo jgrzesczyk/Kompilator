@@ -894,6 +894,11 @@ expression: value {
 			}
 		}
 
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		if(b.type == "NUM") {
 			setRegister("C", b.name);
 			removeIdentifier(b.name);
@@ -908,6 +913,11 @@ expression: value {
 				removeIdentifier(bI.name);
 			}
 		}
+
+		Jump juma;
+		createJump(&juma, codeStack.size(), depth);
+		jumpStack.push_back(juma);
+		pushCommand("JZERO C");
 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
@@ -938,7 +948,15 @@ expression: value {
 		pushCommand("HALF D");
 		pushCommand("JUMP",codeStack.size()-4);
 		pushCommand("SUB B D");
-		pushCommand("JUMP",codeStack.size()-10);		
+		pushCommand("JUMP",codeStack.size()-10);
+		pushCommand("JUMP", codeStack.size()+2);
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+
+		pushCommand("SUB B B");		
 	}
 
 
