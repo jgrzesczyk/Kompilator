@@ -607,9 +607,18 @@ expression: value {
 		else {
 			arrayIndexToRegister(b, bI, "B");
 		}
+
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
 
 		removeIdentifier(a.name);
 	}
@@ -627,9 +636,19 @@ expression: value {
 		else {
 			arrayIndexToRegister(a, aI, "B");
 		}
+		
+		Jump jum;
+		createJump(&jum, codeStack.size(), depth);
+		jumpStack.push_back(jum);
+		pushCommand("JZERO B");
+
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
+
+		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+		jumpStack.pop_back();
+		
 		removeIdentifier(b.name);
 	}
 	else {
