@@ -11,19 +11,10 @@ IN
     s(0):=1;
     i(0):=0;
     FOR j FROM 1 TO n DO
-    
-    
-	k:=j-1;
+        k:=j-1;
         l:=k-1;
-        WRITE 2048;
-        WRITE i(k);
-        WRITE f(k);
-        WRITE f(l);
-        WRITE s(k);
-        WRITE i(j);
-        WRITE 2048;
-	i(j):=i(k)+1;
-	f(j):=f(k)+f(l);
+        i(j):=i(k)+1;
+        f(j):=f(k)+f(l);
         s(j):=s(k)*i(j);
     ENDFOR
     WRITE s(n);

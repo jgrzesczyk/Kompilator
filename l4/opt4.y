@@ -154,11 +154,12 @@ command: identifier ASSIGN {
 
 			if(index.inRegister == "NULL") {
 				memToRegister(index.mem, "C");
-				setRegister("A", std::to_string(offset));
-				pushCommand("ADD A C");
+				
 			} else {
-				pushCommand("ADD A " + index.inRegister);
+				pushCommand("COPY C " + index.inRegister);
 			}
+			setRegister("A", std::to_string(offset));
+			pushCommand("ADD A C");
 			setRegister("C", std::to_string(assignTarget.beginTable));
 			pushCommand("SUB A C");
 			pushCommand("STORE B");
@@ -210,11 +211,12 @@ command: identifier ASSIGN {
 			long long int offset = assignTarget.mem + 1;
 			if(index.inRegister == "NULL") {
 				memToRegister(index.mem, "C");
-				setRegister("A", std::to_string(offset));
-				pushCommand("ADD A C");
+				
 			} else {
-				pushCommand("ADD A " + index.inRegister);
+				pushCommand("COPY C " + index.inRegister);
 			}
+			setRegister("A", std::to_string(offset));
+				pushCommand("ADD A C");
 			setRegister("C", std::to_string(assignTarget.beginTable));
 			pushCommand("SUB A C");
 			pushCommand("GET B");
@@ -679,6 +681,7 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		
 		Jump jum;
 		createJump(&jum, codeStack.size(), depth);
 		jumpStack.push_back(jum);
@@ -708,6 +711,7 @@ expression: value {
 		pushCommand("ADD C C");
 		pushCommand("JUMP",codeStack.size()-6);
 		pushCommand("JUMP",codeStack.size()+2);
+
 		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
 		jumpStack.pop_back();
 
@@ -786,6 +790,7 @@ expression: value {
 				removeIdentifier(aI.name);
 			}
 		}
+		
 		Jump jum;
 		createJump(&jum, codeStack.size(), depth);
 		jumpStack.push_back(jum);
