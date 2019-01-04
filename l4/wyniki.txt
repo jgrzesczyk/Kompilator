@@ -10,7 +10,7 @@ Uruchamianie programu.
 > 0
 > 0
 > 0
-Skończono program (koszt: 1723).
+Skończono program (koszt: 1723).730
 ./4 ./gebalotests/1-numbers.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -33,7 +33,7 @@ Uruchamianie programu.
 > 11
 > 707
 > 7777
-Skończono program (koszt: 6225).
+Skończono program (koszt: 6225).5655
 ./4 ./gebalotests/2-fib.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -41,7 +41,7 @@ Skończono czytanie kodu (liczba rozkazów: 3893).
 Uruchamianie programu.
 ? 1
 > 121393
-Skończono program (koszt: 18069).
+Skończono program (koszt: 18069).14795
 ./4 ./gebalotests/3-fib-factorial.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -50,7 +50,7 @@ Uruchamianie programu.
 ? 20
 > 2432902008176640000
 > 17711
-Skończono program (koszt: 55129).
+Skończono program (koszt: 55129).27774
 ./4 ./gebalotests/4-factorial.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -58,7 +58,7 @@ Skończono czytanie kodu (liczba rozkazów: 437).
 Uruchamianie programu.
 ? 20
 > 2432902008176640000
-Skończono program (koszt: 38913).
+Skończono program (koszt: 38913).25820
 ./4 ./gebalotests/5-tab.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -90,7 +90,7 @@ Uruchamianie programu.
 > 46
 > 24
 > 0
-Skończono program (koszt: 67032).
+Skończono program (koszt: 67032).21694
 ./4 ./gebalotests/6-mod-mult.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -100,7 +100,7 @@ Uruchamianie programu.
 ? 1234567890987654321
 ? 987654321
 > 674106858
-Skończono program (koszt: 273780).
+Skończono program (koszt: 273780).250392
 ./4 ./gebalotests/7-loopiii.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -112,7 +112,7 @@ Uruchamianie programu.
 > 31001
 > 40900
 > 2222012
-Skończono program (koszt: 1088223).
+Skończono program (koszt: 1088223).861797
 ./4 ./gebalotests/8-for.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -124,7 +124,7 @@ Uruchamianie programu.
 > 507
 > 4379
 > 0
-Skończono program (koszt: 267378).
+Skończono program (koszt: 267378).159042
 ./4 ./gebalotests/9-sort.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -175,7 +175,7 @@ Uruchamianie programu.
 > 20
 > 21
 > 22
-Skończono program (koszt: 198163).
+Skończono program (koszt: 198163).125608
 ./4 ./gebalotests/program0.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -187,7 +187,7 @@ Uruchamianie programu.
 > 0
 > 1
 > 1
-Skończono program (koszt: 3384).
+Skończono program (koszt: 3384).1014
 ./4 ./gebalotests/program1.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -218,7 +218,7 @@ Uruchamianie programu.
 > 83
 > 89
 > 97
-Skończono program (koszt: 206349).
+Skończono program (koszt: 206349).56368
 ./4 ./gebalotests/program2.imp ./maszyna/plik.txt
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
@@ -229,4 +229,4 @@ Uruchamianie programu.
 > 1
 > 4115226301
 > 1
-Skończono program (koszt: 124397050).
+Skończono program (koszt: 124397050).93347660

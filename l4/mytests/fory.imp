@@ -1,0 +1,18 @@
+DECLARE
+h(20:32);i;
+IN
+FOR j FROM 1 TO 5 DO
+    WRITE j;
+ENDFOR
+WRITE 9999;
+FOR k FROM 1 TO 5 DO
+    FOR j FROM k DOWNTO 3 DO
+        i := 20+k;
+        i := i+j;
+        h(i) := j;
+    ENDFOR
+ENDFOR
+FOR k FROM 20 TO 32 DO
+    WRITE h(k);
+ENDFOR
+END

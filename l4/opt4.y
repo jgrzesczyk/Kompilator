@@ -62,7 +62,7 @@ long long int memCounter;
 long long int depth;
 bool assignFlag;
 bool writeFlag;
-int freeRegisters;
+std::vector<std::string> freeRegisters; //int freeRegisters;
 Identifier assignTarget;
 std::string tabAssignTargetIndex = "-1";
 std::string expressionArguments[2] = {"-1", "-1"};
@@ -121,8 +121,8 @@ declarations:
 		createIdentifier(&ide, $2, false, "ARR", atoll($4), atoll($6));
 		insertIdentifier($2, ide);
 		memCounter = memCounter + (atoll($6) - atoll($4) + 1);
-		setRegister("B", std::to_string(ide.mem+1));
-        registerToMem("B", ide.mem);
+		// setRegister("B", std::to_string(ide.mem+1));
+        // registerToMem("B", ide.mem);
 	}
 }
 ;
@@ -439,7 +439,8 @@ forbody: TO value DO {
 	jumpStack.pop_back();
 	
 	std::string name = "C" + std::to_string(depth);
-	removeIdentifier(name);
+	
+	removeIdentifier(name); //#tu
 	removeIdentifier(iterator.name);
 	forStack.pop_back();
 
@@ -525,7 +526,7 @@ forbody: TO value DO {
 	jumpStack.pop_back();
 
 	std::string name = "C" + std::to_string(depth);
-	removeIdentifier(name);
+	removeIdentifier(name);//#tu
 	removeIdentifier(iterator.name);
 	forStack.pop_back();
 
@@ -701,12 +702,12 @@ expression: value {
 			}
 		}
 		
-		pushCommand("JZERO C ",codeStack.size()+10);  //wywal na koniec
+		pushCommand("JZERO C ",codeStack.size()+10);  
 		pushCommand("SUB D D");
-		pushCommand("JZERO B", codeStack.size()+9); //za while
-		pushCommand("JODD B ", codeStack.size()+2); //jesli nieparzyste
+		pushCommand("JZERO B", codeStack.size()+9); 
+		pushCommand("JODD B ", codeStack.size()+2); 
 		pushCommand("JUMP", codeStack.size()+2);
-		pushCommand("ADD D C");//to dodaj
+		pushCommand("ADD D C");
 		pushCommand("HALF B");
 		pushCommand("ADD C C");
 		pushCommand("JUMP",codeStack.size()-6);
@@ -816,15 +817,17 @@ expression: value {
 		jumpStack.push_back(juma);
 		pushCommand("JZERO C");
 
-		if(freeRegisters < 4)
-			registerToMem("E");
+		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
+			memToRegister("E");
+		// if(freeRegisters < 4)
+		// 	registerToMem("E");
 
-		pushCommand("SUB E E"); //-
+		pushCommand("SUB E E"); 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
-		pushCommand("JZERO D",codeStack.size()+3); //lec na miejsce za jumpem
+		pushCommand("JZERO D",codeStack.size()+3); 
 		pushCommand("SUB B B");
-		pushCommand("JUMP", codeStack.size()+35); //do miejsca z PUT B
+		pushCommand("JUMP", codeStack.size()+35); 
 		
 		pushCommand("COPY D B");
 		pushCommand("SUB D C");
@@ -832,7 +835,7 @@ expression: value {
 		pushCommand("JUMP",codeStack.size()+4); 
 		pushCommand("SUB B B");
 		pushCommand("INC B");
-		pushCommand("JUMP", codeStack.size()+28); //do PUT B
+		pushCommand("JUMP", codeStack.size()+28); 
 
 		pushCommand("COPY D C");
 		pushCommand("COPY A D");
@@ -844,23 +847,23 @@ expression: value {
 		pushCommand("COPY A C");
 		pushCommand("SUB A B");
 		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP", codeStack.size()+10);//do put b
+		pushCommand("JUMP", codeStack.size()+10);
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
 		pushCommand("JZERO A",codeStack.size()+4);
 		pushCommand("HALF D");
-		pushCommand("ADD E E"); //-
+		pushCommand("ADD E E"); 
 		pushCommand("JUMP",codeStack.size()-5);
 		pushCommand("SUB B D");
-		pushCommand("INC E"); //-
+		pushCommand("INC E"); 
 		pushCommand("JUMP",codeStack.size()-12);
-		pushCommand("COPY A D"); //----		
-		pushCommand("SUB A C"); //-
-		pushCommand("JZERO A", codeStack.size()+4); //-
-		pushCommand("ADD E E"); //-
-		pushCommand("HALF D");//-
-		pushCommand("JUMP", codeStack.size()-5);//-
-		pushCommand("COPY B E");//-
+		pushCommand("COPY A D"); 
+		pushCommand("SUB A C"); 
+		pushCommand("JZERO A", codeStack.size()+4); 
+		pushCommand("ADD E E"); 
+		pushCommand("HALF D");
+		pushCommand("JUMP", codeStack.size()-5);
+		pushCommand("COPY B E");
 		pushCommand("JUMP", codeStack.size()+2);
 
 		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
@@ -870,8 +873,10 @@ expression: value {
 
 		pushCommand("SUB B B");
 
-		if(freeRegisters < 4)
+		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
 			memToRegister("E");
+		// if(freeRegisters < 4)
+			// memToRegister("E");
 	}
 
 
@@ -943,15 +948,15 @@ expression: value {
 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
-		pushCommand("JZERO D",codeStack.size()+2); //lec na miejsce za jumpem
-		pushCommand("JUMP", codeStack.size()+25); //do miejsca z PUT B
+		pushCommand("JZERO D",codeStack.size()+2); 
+		pushCommand("JUMP", codeStack.size()+25); 
 		
 		pushCommand("COPY D B");
 		pushCommand("SUB D C");
 		pushCommand("JZERO D",codeStack.size()+2);
 		pushCommand("JUMP",codeStack.size()+3); 
 		pushCommand("SUB B B");
-		pushCommand("JUMP", codeStack.size()+19); //do PUT B
+		pushCommand("JUMP", codeStack.size()+19); 
 
 		pushCommand("COPY D C");
 		pushCommand("COPY A D");
@@ -963,7 +968,7 @@ expression: value {
 		pushCommand("COPY A C");
 		pushCommand("SUB A B");
 		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP", codeStack.size()+8);//do put b
+		pushCommand("JUMP", codeStack.size()+8);
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
 		pushCommand("JZERO A",codeStack.size()+3);
@@ -1304,7 +1309,7 @@ identifier: IDENT {
 			exit(1);
 		}
 		
-		if(false) { //todo warunek na zly indeks tablicy?
+		if(false) { 
 			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
 			exit(1);
 		}
@@ -1622,7 +1627,7 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 			aIndex = bIndex;
 			bIndex = temp;
 		}
-        if(bIndex.type == "NUM") { //  1+d(2)
+        if(bIndex.type == "NUM") { 
             long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
 
 			if(stoll(a.name) <= 3) {
@@ -1640,7 +1645,7 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
             removeIdentifier(a.name);
             removeIdentifier(bIndex.name);
         }
-        else if(bIndex.type == "IDE") { //1+d(b)
+        else if(bIndex.type == "IDE") { 
 
             arrayIndexToRegister(b, bIndex, "B");
 
@@ -1667,21 +1672,21 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 			cIndex = bIndex;
 		}
     
-        if(cIndex.type == "NUM") { // a + d(1)
+        if(cIndex.type == "NUM") { 
 			long long int addr = b.mem + stoll(cIndex.name) + 1 - b.beginTable;
 			memToRegister(a.mem, "B");
 			memToRegister(addr, "C");
             pushCommand("ADD B C");
             removeIdentifier(cIndex.name);
         }
-        else if(cIndex.type == "IDE") { // a + d(b)
-			arrayIndexToRegister(b, cIndex, "B"); //wartosc z tablicy
+        else if(cIndex.type == "IDE") { 
+			arrayIndexToRegister(b, cIndex, "B"); 
 			memToRegister(a.mem, "C");
 			pushCommand("ADD B C");
         }
     }
     else if(a.type == "ARR" && b.type == "ARR") {
-        if(aIndex.type == "NUM" && bIndex.type == "NUM") {// a(2)+a(3)
+        if(aIndex.type == "NUM" && bIndex.type == "NUM") {
             long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
             long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
@@ -1696,7 +1701,7 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
             removeIdentifier(aIndex.name);
             removeIdentifier(bIndex.name);
         }
-        else if(aIndex.type == "NUM" && bIndex.type == "IDE") { //a(2)+a(b)
+        else if(aIndex.type == "NUM" && bIndex.type == "IDE") { 
             long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
 			arrayIndexToRegister(b, bIndex, "B");
 			memToRegister(addrA, "C");
@@ -1812,7 +1817,7 @@ void memToRegister(long long int mem, std::string reg) {
 				/*registerValue *= 2;*/
 			}
 		}
-		pushCommand("LOAD " + reg); //todo many registers
+		pushCommand("LOAD " + reg); 
 	}
 }
 
@@ -1844,7 +1849,7 @@ void registerToMem(std::string reg) {
 	        /*registerValue *= 2;*/
 		}
 	}
-    pushCommand("STORE " + reg); //todo many registers
+    pushCommand("STORE " + reg); 
 }
 void registerToMem(std::string reg, long long int mem) {
 	
@@ -1874,7 +1879,7 @@ void registerToMem(std::string reg, long long int mem) {
 				/*registerValue *= 2;*/
 			}
 		}
-		pushCommand("STORE " + reg); //todo many registers
+		pushCommand("STORE " + reg); 
 	}
 }
 
@@ -1906,6 +1911,11 @@ void createIdentifier(Identifier* id, std::string name, bool isLocal, std::strin
 }
 void removeIdentifier(std::string key) {
     if(idStack.count(key) > 0) {
+		std::string reg = idStack.at(key).inRegister;
+		if(reg != "NULL") {
+			freeRegisters.push_back(reg);
+			pushCommand("SUB " + reg + " " + reg);
+		}
         if(idStack.at(key).counter > 0) {
             idStack.at(key).counter = idStack.at(key).counter-1;
         }
@@ -1965,13 +1975,20 @@ int isPowerOfTwo(long long int x) {
 }
 
 std::string registerValue() {
-	std::string registersTab[] = {"NULL","H","G","F","E"};
-	if(freeRegisters == 0) {
-		return registersTab[0];
+	if(freeRegisters.size() > 0) {
+		std::string reg = freeRegisters.at(freeRegisters.size()-1);
+		freeRegisters.pop_back();
+		return reg;
 	} else {
-		freeRegisters--;
-		return registersTab[freeRegisters+1];
+		return "NULL";
 	}
+	// std::string registersTab[] = {"NULL","H","G","F","E"};
+	// if(freeRegisters == 0) {
+	// 	return registersTab[0];
+	// } else {
+	// 	freeRegisters--;
+	// 	return registersTab[freeRegisters+1];
+	// }
 }
 
 int yyerror(const std::string s) {
@@ -1982,12 +1999,17 @@ int yyerror(const std::string s) {
 
 int main (int argc, char** argv) {
 
-
 	assignFlag = true;
 	memCounter = 0;
 	writeFlag = false;
 	depth = 0;
-	freeRegisters = 4;
+
+	freeRegisters.push_back("H");
+	freeRegisters.push_back("G");
+	freeRegisters.push_back("F");
+	freeRegisters.push_back("E");
+	
+	//freeRegisters = 4;
 
 	yyin = fopen(argv[1], "r");
     yyparse();
