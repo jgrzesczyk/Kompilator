@@ -20,7 +20,7 @@ typedef struct {
 } Variable;
 
 typedef struct {
-    long long int placeInStack, depth;
+    long long int codePosition, depth;
 } Jump;
 
 long long int memCounter, depth;
@@ -262,16 +262,16 @@ command: identifier ASSIGN {
 	long long int stack;
 	long long int jumpCount = jumps.size()-1;
 	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
-		stack = jumps.at(jumpCount-2).placeInStack;
+		stack = jumps.at(jumpCount-2).codePosition;
 		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
-		addInt(jumps.at(jumpCount-1).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
+		addInt(jumps.at(jumpCount-1).codePosition, code.size());
 		jumps.pop_back();
 	}
 	else {
-		stack = jumps.at(jumpCount-1).placeInStack;
+		stack = jumps.at(jumpCount-1).codePosition;
 		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
 	}
 	jumps.pop_back();
 	jumps.pop_back();
@@ -289,16 +289,16 @@ command: identifier ASSIGN {
 	long long int stack;
 	long long int jumpCount = jumps.size()-1;
 	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
-		stack = jumps.at(jumpCount-2).placeInStack;
+		stack = jumps.at(jumpCount-2).codePosition;
 		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
-		addInt(jumps.at(jumpCount-1).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
+		addInt(jumps.at(jumpCount-1).codePosition, code.size());
 		jumps.pop_back();
 	}
 	else {
-		stack = jumps.at(jumpCount-1).placeInStack;
+		stack = jumps.at(jumpCount-1).codePosition;
 		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
 	}
 	jumps.pop_back();
 	jumps.pop_back();
@@ -317,16 +317,16 @@ ifbody: ELSE {
 	pushCommand("JUMP");
 	long long int jumpCount = jumps.size()-2;
 	Jump jump = jumps.at(jumpCount);
-	addInt(jump.placeInStack, code.size());
+	addInt(jump.codePosition, code.size());
 	
 	jumpCount--;
 	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
 	}
 	
 	assignFlag = true;
 } commands ENDIF {
-	addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+	addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 
 	jumps.pop_back();
 	jumps.pop_back();
@@ -338,10 +338,10 @@ ifbody: ELSE {
 }
 | ENDIF {
 	long long int jumpCount = jumps.size()-1;
-	addInt(jumps.at(jumpCount).placeInStack, code.size());
+	addInt(jumps.at(jumpCount).codePosition, code.size());
 	jumpCount--;
 	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
-		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount).codePosition, code.size());
 		jumps.pop_back();
 	}
 	jumps.pop_back();
@@ -406,7 +406,7 @@ forbody: TO value DO {
 
 	memToRegister(variables.at(name).memory, "B");
 	
-	addInt(jumps.at(jumps.size()-1).placeInStack-1, code.size());
+	addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
 	Jump j;
 	newJump(&j, code.size(), depth);
@@ -423,9 +423,9 @@ forbody: TO value DO {
 	registerToMem("B", iterator.memory);
 
 	long long int jumpCount = jumps.size()-1;
-	long long int stack = jumps.at(jumpCount-1).placeInStack;
+	long long int stack = jumps.at(jumpCount-1).codePosition;
 	pushCommand("JUMP", stack);
-	addInt(jumps.at(jumpCount).placeInStack, code.size());
+	addInt(jumps.at(jumpCount).codePosition, code.size());
 	jumps.pop_back();
 	jumps.pop_back();
 	
@@ -493,7 +493,7 @@ forbody: TO value DO {
 
 	memToRegister(variables.at(name).memory, "B");
 	
-	addInt(jumps.at(jumps.size()-1).placeInStack-1, code.size());
+	addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
 	Jump j;
 	newJump(&j, code.size(), depth);
@@ -510,9 +510,9 @@ forbody: TO value DO {
 	registerToMem("B", iterator.memory);
 
 	long long int jumpCount = jumps.size()-1;
-	long long int stack = jumps.at(jumpCount-1).placeInStack;
+	long long int stack = jumps.at(jumpCount-1).codePosition;
 	pushCommand("JUMP", stack);
-	addInt(jumps.at(jumpCount).placeInStack, code.size());
+	addInt(jumps.at(jumpCount).codePosition, code.size());
 	jumps.pop_back();
 	jumps.pop_back();
 
@@ -625,7 +625,7 @@ expression: value {
 			pushCommand("ADD B B");
 		}
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 
 		popVariable(a.name);
@@ -654,7 +654,7 @@ expression: value {
 			pushCommand("ADD B B");
 		}
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 
 		popVariable(b.name);
@@ -704,7 +704,7 @@ expression: value {
 		pushCommand("JUMP",code.size()-6);
 		pushCommand("JUMP",code.size()+2);
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 
 		pushCommand("SUB D D");
@@ -759,7 +759,7 @@ expression: value {
 			pushCommand("HALF B");
 		}
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 	}
 	else if(a.type == NUMBER && b.type == NUMBER) {
@@ -808,8 +808,10 @@ expression: value {
 		jumps.push_back(juma);
 		pushCommand("JZERO C");
 
-		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
-			memToRegister("E");
+		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
+			registerToMem("E");
+		} 
+		
 		
 		
 
@@ -857,19 +859,17 @@ expression: value {
 		pushCommand("COPY B E");
 		pushCommand("JUMP", code.size()+2);
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 
 		pushCommand("SUB B B");
 
-		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
+		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
 			memToRegister("E");
-		
-			
+		}
 	}
-
 
 	argumentsTabIndex[0] = "-1";
 	argumentsTabIndex[1] = "-1";
@@ -969,9 +969,9 @@ expression: value {
 		pushCommand("JUMP",code.size()-10);
 		pushCommand("JUMP", code.size()+2);
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 		jumps.pop_back();
 
 		pushCommand("SUB B B");			
@@ -1077,7 +1077,7 @@ condition: value EQ value {
 		else
 			arraySubstract(a, b, aI, bI, 0, 1);
 
-		addInt(jumps.at(jumps.size()-1).placeInStack, code.size()+1);
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size()+1);
 		jumps.pop_back();
 		Jump jj;
 		newJump(&jj, code.size(), depth);
@@ -1377,7 +1377,7 @@ identifier: IDENT {
 
 
 void newJump(Jump *j, long long int stack, long long int depth) {
-    j->placeInStack = stack;
+    j->codePosition = stack;
     j->depth = depth;
 }
 
@@ -1923,7 +1923,7 @@ void insertVariable(std::string key, Variable i) {
     else {
         variables.at(key).numberAmount = variables.at(key).numberAmount+1;
     }
-	if(i.inRegister != "NULL")
+	if(i.inRegister != "NULL")//debug
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << " reg:" << i.inRegister << std::endl;
 }
 
@@ -1934,12 +1934,6 @@ void pushCommand(std::string str) {
 void pushCommand(std::string str, long long int num) {
     std::string temp = str + " " + std::to_string(num);
     code.push_back(temp);
-}
-
-void printStdCode() {
-	long long int i;
-	for(i = 0; i < code.size(); i++)
-        std::cout << code.at(i) << std::endl;
 }
 
 void printCode(std::string filename) {
@@ -1993,10 +1987,10 @@ int main (int argc, char** argv) {
 	writeFlag = false;
 	depth = 0;
 
-	freeRegisters.push_back("H");
-	freeRegisters.push_back("G");
-	freeRegisters.push_back("F");
 	freeRegisters.push_back("E");
+	freeRegisters.push_back("F");
+	freeRegisters.push_back("G");
+	freeRegisters.push_back("H");
 	
 	
 
@@ -2004,7 +1998,7 @@ int main (int argc, char** argv) {
     yyparse();
 
 	if(argc < 3) {
-		printStdCode();
+		return -1;
 	} else {
 		printCode(argv[2]);
 	}

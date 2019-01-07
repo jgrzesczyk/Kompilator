@@ -1,0 +1,24 @@
+DECLARE
+r_h;r_g;r_f;tab(2:3);
+
+IN
+r_h:=1;
+r_g:=2;
+r_f:=3;
+tab(r_g) :=10;
+tab(r_f) :=150;
+tab(r_f) := tab(3)/tab(2);
+WRITE tab(3);
+
+FOR i FROM 2 TO 5 DO
+tab(r_f) :=1540;
+tab(r_f) := tab(3)/tab(2);
+WRITE tab(3);
+ENDFOR
+
+tab(r_f) :=1540;
+tab(r_f) := tab(3)/tab(2);
+WRITE tab(3);
+
+
+END
