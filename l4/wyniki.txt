@@ -1,8 +1,11 @@
 jg@jg:~/Desktop/pwr/jftt/l4$ bash tests.sh
-./4 ./gebalotests/0-div-mod.imp ./maszyna/plik.txt
+./4 ./officialtests/0-div-mod.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 214).
+Skończono czytanie kodu (liczba rozkazów: 177).
 Uruchamianie programu.
 ? 1
 ? 0
@@ -10,11 +13,40 @@ Uruchamianie programu.
 > 0
 > 0
 > 0
-Skończono program (koszt: 1723).730
-./4 ./gebalotests/1-numbers.imp ./maszyna/plik.txt
+Skończono program (koszt: 730).
+tests.sh: line 5: [: missing `]'
+tests.sh: line 5: 0-div-mod.imp: command not found
+^C
+jg@jg:~/Desktop/pwr/jftt/l4$ make
+yacc -d opt4.y
+lex 4.l
+g++ -std=c++11 -g lex.yy.c y.tab.c -o 4
+rm y.tab.c y.tab.h lex.yy.c
+jg@jg:~/Desktop/pwr/jftt/l4$ bash tests.sh
+./4 ./officialtests/0-div-mod.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 692).
+Skończono czytanie kodu (liczba rozkazów: 177).
+Uruchamianie programu.
+? 1
+? 0
+> 1
+> 0
+> 0
+> 0
+Skończono program (koszt: 730).
+
+./4 ./officialtests/1-numbers.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
+Add: d name: d type: 1 memory:11 reg:H
+./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
+Czytanie kodu.
+Skończono czytanie kodu (liczba rozkazów: 647).
 Uruchamianie programu.
 > 0
 > 1
@@ -23,8 +55,8 @@ Uruchamianie programu.
 > 100
 > 10000
 > 1234567890
-? 69
-> 84
+? 20
+> 35
 > 15
 > 999
 > 555555555
@@ -33,36 +65,60 @@ Uruchamianie programu.
 > 11
 > 707
 > 7777
-Skończono program (koszt: 6225).5655
-./4 ./gebalotests/2-fib.imp ./maszyna/plik.txt
+Skończono program (koszt: 5655).
+
+./4 ./officialtests/2-fib.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:246913571 reg:E
+Add: b name: b type: 1 memory:246913572 reg:F
+Add: c name: c type: 1 memory:246913573 reg:G
+Add: d name: d type: 1 memory:246913574 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 3893).
+Skończono czytanie kodu (liczba rozkazów: 3188).
 Uruchamianie programu.
 ? 1
 > 121393
-Skończono program (koszt: 18069).14795
-./4 ./gebalotests/3-fib-factorial.imp ./maszyna/plik.txt
+Skończono program (koszt: 14795).
+
+./4 ./officialtests/3-fib-factorial.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:306 reg:E
+Add: k name: k type: 1 memory:307 reg:F
+Add: l name: l type: 1 memory:308 reg:G
+Add: j name: j type: 1 memory:309 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 572).
+Skończono czytanie kodu (liczba rozkazów: 259).
 Uruchamianie programu.
 ? 20
 > 2432902008176640000
 > 17711
-Skończono program (koszt: 55129).27774
-./4 ./gebalotests/4-factorial.imp ./maszyna/plik.txt
+Skończono program (koszt: 27774).
+
+./4 ./officialtests/4-factorial.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:102 reg:E
+Add: m name: m type: 1 memory:103 reg:F
+Add: a name: a type: 1 memory:104 reg:G
+Add: j name: j type: 1 memory:105 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 437).
+Skończono czytanie kodu (liczba rozkazów: 265).
 Uruchamianie programu.
 ? 20
 > 2432902008176640000
-Skończono program (koszt: 38913).25820
-./4 ./gebalotests/5-tab.imp ./maszyna/plik.txt
+Skończono program (koszt: 25820).
+
+./4 ./officialtests/5-tab.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:0 reg:E
+Add: j name: j type: 1 memory:1 reg:F
+Add: i name: i type: 1 memory:83 reg:G
+Add: C1 name: C1 type: 1 memory:84 reg:H
+Add: i name: i type: 1 memory:83 reg:G
+Add: C1 name: C1 type: 1 memory:84 reg:H
+Add: i name: i type: 1 memory:83 reg:G
+Add: C1 name: C1 type: 1 memory:84 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 555).
+Skończono czytanie kodu (liczba rozkazów: 230).
 Uruchamianie programu.
 > 0
 > 24
@@ -90,21 +146,47 @@ Uruchamianie programu.
 > 46
 > 24
 > 0
-Skończono program (koszt: 67032).21694
-./4 ./gebalotests/6-mod-mult.imp ./maszyna/plik.txt
+Skończono program (koszt: 21694).
+
+./4 ./officialtests/6-mod-mult.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
+Add: wynik name: wynik type: 1 memory:3 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 298).
+Skończono czytanie kodu (liczba rozkazów: 250).
 Uruchamianie programu.
 ? 1234567890
 ? 1234567890987654321
 ? 987654321
 > 674106858
-Skończono program (koszt: 273780).250392
-./4 ./gebalotests/7-loopiii.imp ./maszyna/plik.txt
+Skończono program (koszt: 250392).
+
+./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
+Add: i name: i type: 1 memory:3 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 250).
+Skończono czytanie kodu (liczba rozkazów: 211).
+Uruchamianie programu.
+? 0
+? 0
+? 0
+> 31000
+> 40900
+> 2222010
+Skończono program (koszt: 861797).
+./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
+Add: i name: i type: 1 memory:3 reg:H
+./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
+Czytanie kodu.
+Skończono czytanie kodu (liczba rozkazów: 211).
 Uruchamianie programu.
 ? 1
 ? 0
@@ -112,11 +194,16 @@ Uruchamianie programu.
 > 31001
 > 40900
 > 2222012
-Skończono program (koszt: 1088223).861797
-./4 ./gebalotests/8-for.imp ./maszyna/plik.txt
+Skończono program (koszt: 861797).
+
+./4 ./officialtests/8-for.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
+Add: c name: c type: 1 memory:2 reg:G
+Add: i name: i type: 1 memory:3 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 243).
+Skończono czytanie kodu (liczba rozkazów: 194).
 Uruchamianie programu.
 ? 12
 ? 23
@@ -124,11 +211,16 @@ Uruchamianie programu.
 > 507
 > 4379
 > 0
-Skończono program (koszt: 267378).159042
-./4 ./gebalotests/9-sort.imp ./maszyna/plik.txt
+Skończono program (koszt: 159042).
+
+./4 ./officialtests/9-sort.imp ./maszyna/plik.txt
+Add: x name: x type: 1 memory:23 reg:E
+Add: q name: q type: 1 memory:24 reg:F
+Add: w name: w type: 1 memory:25 reg:G
+Add: j name: j type: 1 memory:26 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 833).
+Skończono czytanie kodu (liczba rozkazów: 676).
 Uruchamianie programu.
 > 5
 > 2
@@ -175,23 +267,49 @@ Uruchamianie programu.
 > 20
 > 21
 > 22
-Skończono program (koszt: 198163).125608
-./4 ./gebalotests/program0.imp ./maszyna/plik.txt
+Skończono program (koszt: 125608).
+
+./4 ./officialtests/program0.imp ./maszyna/plik.txt
+Add: a name: a type: 1 memory:0 reg:E
+Add: b name: b type: 1 memory:1 reg:F
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 44).
+Skończono czytanie kodu (liczba rozkazów: 30).
 Uruchamianie programu.
-? 27
+? 1345601
 > 1
+> 0
+> 0
+> 0
+> 0
+> 0
+> 1
+> 0
+> 0
+> 0
+> 0
+> 1
+> 0
+> 0
+> 0
+> 1
+> 0
+> 0
 > 1
 > 0
 > 1
-> 1
-Skończono program (koszt: 3384).1014
-./4 ./gebalotests/program1.imp ./maszyna/plik.txt
+Skończono program (koszt: 3866).
+
+./4 ./officialtests/program1.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:0 reg:E
+Add: j name: j type: 1 memory:1 reg:F
+Add: i name: i type: 1 memory:102 reg:G
+Add: C1 name: C1 type: 1 memory:103 reg:H
+Add: i name: i type: 1 memory:102 reg:G
+Add: C1 name: C1 type: 1 memory:103 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 346).
+Skończono czytanie kodu (liczba rozkazów: 123).
 Uruchamianie programu.
 > 2
 > 3
@@ -218,15 +336,37 @@ Uruchamianie programu.
 > 83
 > 89
 > 97
-Skończono program (koszt: 206349).56368
-./4 ./gebalotests/program2.imp ./maszyna/plik.txt
+Skończono program (koszt: 56368).
+
+./4 ./officialtests/program2.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:0 reg:E
+Add: m name: m type: 1 memory:1 reg:F
+Add: reszta name: reszta type: 1 memory:2 reg:G
+Add: potega name: potega type: 1 memory:3 reg:H
 ./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
 Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 297).
+Skończono czytanie kodu (liczba rozkazów: 250).
+Uruchamianie programu.
+? 12345678901
+> 857
+> 1
+> 14405693
+> 1
+Skończono program (koszt: 5029277).
+./4 ./officialtests/program2.imp ./maszyna/plik.txt
+Add: n name: n type: 1 memory:0 reg:E
+Add: m name: m type: 1 memory:1 reg:F
+Add: reszta name: reszta type: 1 memory:2 reg:G
+Add: potega name: potega type: 1 memory:3 reg:H
+./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
+Czytanie kodu.
+Skończono czytanie kodu (liczba rozkazów: 250).
 Uruchamianie programu.
 ? 12345678903
 > 3
 > 1
 > 4115226301
 > 1
-Skończono program (koszt: 124397050).93347660
+Skończono program (koszt: 93347660).
+
+jg@jg:~/Desktop/pwr/jftt/l4$

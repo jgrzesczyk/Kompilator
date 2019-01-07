@@ -11,9 +11,9 @@ int yylex();
 
 "[" { BEGIN(COMMENT); }
 <COMMENT>"]" { BEGIN(INITIAL); }
-<COMMENT>"[" { printf("Błąd [około linii %d]: próba zagnieżdżenia komentarza.\n",yylineno); exit(1); }
+<COMMENT>"[" { printf("Error [linia %d]: próba zagnieżdżenia komentarza.\n",yylineno); exit(1); }
 <COMMENT>(\n|.) ;
-<COMMENT><<EOF>> { printf("Błąd: niezakończony komentarz.\n"); exit(1); }
+<COMMENT><<EOF>> { printf("Error: niezakończony komentarz.\n"); exit(1); }
 
 ":=" {return ASSIGN;}
 "!=" {return NEQ;}
@@ -49,11 +49,10 @@ ENDDO {return ENDDO;}
 ENDFOR {return ENDFOR;}
 ENDWHILE {return ENDWHILE;}
 ENDIF {return ENDIF;}
-[_a-z]+ {yylval.str = (char *)strdup(yytext); return IDENT;}
-[0-9]+ {yylval.str = (char *)strdup(yytext); return NUM;}
+[_a-z]+ {yylval.str = (char*) strdup(yytext); return IDENT;}
+[0-9]+ {yylval.str = (char*) strdup(yytext); return NUM;}
 [ \t\r\n]+ ;
-. { printf("Wystąpiło słowo niezgodne z gramatyką!\n"); yyterminate(); }
+. { printf("Error: Wystąpiło słowo niezgodne z gramatyką!\n"); yyterminate(); }
 %%
 
 int yywrap(void) {return 1;}
-

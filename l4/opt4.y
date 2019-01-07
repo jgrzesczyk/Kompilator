@@ -9,68 +9,61 @@
 #include <map>
 #include <regex>
 
+enum Type {
+	ARRAY, IDENTIFIER, NUMBER
+};
 typedef struct {
-	std::string name;
-    std::string type;
-    bool initialized;
-    int counter;
-	long long int mem;
-	bool local;
-	bool isTable;
-  	long long int beginTable;
-	long long int endTable;
-	std::string inRegister;
-} Identifier;
+	Type type;
+	std::string name, inRegister;
+    bool isInit, isLocal, isTable;
+	long long int memory, numberAmount, beginTable, endTable;
+} Variable;
 
 typedef struct {
-    long long int placeInStack;
-    long long int depth;
+    long long int placeInStack, depth;
 } Jump;
 
-std::vector<std::string> codeStack;
-std::map<std::string, Identifier> idStack;
-std::vector<Jump> jumpStack;
-std::vector<Identifier> forStack;
+long long int memCounter, depth;
+bool assignFlag, writeFlag;
+std::vector<std::string> freeRegisters;
+Jump tj;
+int indextj;
+
+std::vector<std::string> code;
+std::map<std::string, Variable> variables;
+std::vector<Jump> jumps;
+std::vector<Variable> forVariables;
+
+Variable assignTarget;
+std::string tabAssignTargetIndex = "-1";
+std::string expressionArguments[2] = {"-1", "-1"};
+std::string argumentsTabIndex[2] = {"-1", "-1"};
 
 int yyerror (const std::string);
 extern int yylineno;
 extern FILE * yyin;
 int yylex();
-
-void addInt(long long int command, long long int val);
-void createJump(Jump *j, long long int stack, long long int depth);
-void add(Identifier a, Identifier b);
-void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex);
-void sub(Identifier, Identifier, int, int);
-void subTab(Identifier, Identifier, Identifier, Identifier, int, int);
-void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg);
+void addInt(long long int, long long int);
+void newJump(Jump *j, long long int, long long int);
+void addition(Variable a, Variable b);
+void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex);
+void substract(Variable, Variable, int, int);
+void arraySubstract(Variable, Variable, Variable, Variable, int, int);
+void arrayIndexToRegister(Variable tab, Variable index, std::string reg);
 void setRegister(std::string, std::string);
-void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type);
-void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end);
-void removeIdentifier(std::string key);
-void insertIdentifier(std::string key, Identifier i);
+void newVariable(Variable* id, std::string name, bool isLocal, Type type);
+void newVariable(Variable* id, std::string name, bool isLocal, Type type, long long int begin, long long int end);
+void popVariable(std::string key);
+void insertVariable(std::string, Variable);
 void pushCommand(std::string);
 void pushCommand(std::string, long long int);
 void memToRegister(long long int, std::string);
 void memToRegister(std::string);
-std::string decToBin(long long int n);
+std::string decToBin(long long int);
 void registerToMem(std::string, long long int);
 void registerToMem(std::string);
 int isPowerOfTwo(long long int);
 std::string registerValue();
-long long int memCounter;
-long long int depth;
-bool assignFlag;
-bool writeFlag;
-std::vector<std::string> freeRegisters; //int freeRegisters;
-Identifier assignTarget;
-std::string tabAssignTargetIndex = "-1";
-std::string expressionArguments[2] = {"-1", "-1"};
-std::string argumentsTabIndex[2] = {"-1", "-1"};
-
-
-Jump tj;
-int indextj;
 %}
 
 %define parse.error verbose
@@ -97,32 +90,30 @@ program: DECLARE declarations IN commands END {
 
 declarations: 
 | declarations IDENT COLON {
-	if(idStack.find($2) != idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
+	if(variables.find($2) != variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
 		exit(1);
 	} else {
-		Identifier ide;
-		createIdentifier(&ide, $2, false, "IDE");
-		insertIdentifier($2, ide);
+		Variable ide;
+		newVariable(&ide, $2, false, IDENTIFIER);
+		insertVariable($2, ide);
 	}
 }
 | declarations IDENT LB NUM INDEXER NUM RB COLON {
-	if(idStack.find($2) != idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
+	if(variables.find($2) != variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
 		exit(1);
 	} else if (atoll($4) > atoll($6)) {
-        std::cout << "Błąd [okolice linii " << yylineno << "]: Indeksy tablicy " << $<str>2 << " są niepoprawne" << std::endl;
+        std::cout << "Error [linia " << yylineno << "]: Indeksy tablicy " << $<str>2 << " są niepoprawne" << std::endl;
 		exit(1);
     } else if (atoll($4) < 0) {
-        std::cout << "Błąd [okolice linii " << yylineno << "]: Początek tablicy o indeksie " << $<str>2 << " < 0!" << std::endl;
+        std::cout << "Error [linia " << yylineno << "]: Początek tablicy o indeksie " << $<str>2 << " < 0!" << std::endl;
 		exit(1);
     } else {
-		Identifier ide;
-		createIdentifier(&ide, $2, false, "ARR", atoll($4), atoll($6));
-		insertIdentifier($2, ide);
-		memCounter = memCounter + (atoll($6) - atoll($4) + 1);
-		// setRegister("B", std::to_string(ide.mem+1));
-        // registerToMem("B", ide.mem);
+		Variable ide;
+		newVariable(&ide, $2, false, ARRAY, atoll($4), atoll($6));
+		insertVariable($2, ide);
+		memCounter = memCounter + (atoll($6) - atoll($4) + 1);       
 	}
 }
 ;
@@ -130,9 +121,9 @@ declarations:
 newlabel: WHILE {
 	assignFlag = false;
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
+	newJump(&j, code.size(), depth);
 	tj = j;
-	indextj = jumpStack.size();
+	indextj = jumps.size();
 }
 ;
 
@@ -143,17 +134,17 @@ commands: commands command
 command: identifier ASSIGN {
 	assignFlag = false;
 } expression COLON {
-	if(assignTarget.type == "ARR") {
-		Identifier index = idStack.at(tabAssignTargetIndex);
-		if(index.type == "NUM") {
-			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
+	if(assignTarget.type == ARRAY) {
+		Variable index = variables.at(tabAssignTargetIndex);
+		if(index.type == NUMBER) {
+			long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
 			registerToMem("B", tabElMem);
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		} else {
-			long long int offset = assignTarget.mem + 1;
+			long long int offset = assignTarget.memory + 1;
 
 			if(index.inRegister == "NULL") {
-				memToRegister(index.mem, "C");
+				memToRegister(index.memory, "C");
 				
 			} else {
 				pushCommand("COPY C " + index.inRegister);
@@ -165,14 +156,14 @@ command: identifier ASSIGN {
 			pushCommand("STORE B");
 		}
 	}
-	else if(!assignTarget.local) {
-		registerToMem("B", assignTarget.mem);
+	else if(!assignTarget.isLocal) {
+		registerToMem("B", assignTarget.memory);
 	}
 	else {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+		std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
 		exit(1);
 	}
-	idStack.at(assignTarget.name).initialized = true;
+	variables.at(assignTarget.name).isInit = true;
 	assignFlag = true;
 }
 | IF {
@@ -183,34 +174,34 @@ command: identifier ASSIGN {
 } THEN commands ifbody
 
 | FOR IDENT {
-	if(idStack.find($2)!=idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << "." << std::endl;
+	if(variables.find($2)!=variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << "." << std::endl;
 		exit(1);
 	} else {
-		Identifier i;
-		createIdentifier(&i, $2, true, "IDE");
-		insertIdentifier($2, i);
+		Variable i;
+		newVariable(&i, $2, true, IDENTIFIER);
+		insertVariable($2, i);
 	}
 	assignFlag = false;
-	assignTarget = idStack.at($2);
+	assignTarget = variables.at($2);
 	depth++;
 } FROM value forbody
 
 | READ {
 	assignFlag = true;
 } identifier COLON {
-	if(assignTarget.type == "ARR") {
-		Identifier index = idStack.at(tabAssignTargetIndex);
-		if(index.type == "NUM") {
+	if(assignTarget.type == ARRAY) {
+		Variable index = variables.at(tabAssignTargetIndex);
+		if(index.type == NUMBER) {
 			pushCommand("GET B");
-			long long int tabElMem = assignTarget.mem + stoll(index.name) + 1 - assignTarget.beginTable;
+			long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
 			registerToMem("B", tabElMem);
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		}
 		else {
-			long long int offset = assignTarget.mem + 1;
+			long long int offset = assignTarget.memory + 1;
 			if(index.inRegister == "NULL") {
-				memToRegister(index.mem, "C");
+				memToRegister(index.memory, "C");
 				
 			} else {
 				pushCommand("COPY C " + index.inRegister);
@@ -223,38 +214,38 @@ command: identifier ASSIGN {
 			pushCommand("STORE B");
 		}
 
-	} else if(!assignTarget.local) {
-		pushCommand("GET B"); //todo many r
-		registerToMem("B", assignTarget.mem);
+	} else if(!assignTarget.isLocal) {
+		pushCommand("GET B"); 
+		registerToMem("B", assignTarget.memory);
 	} else {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+		std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
         exit(1);
 	}
-	idStack.at(assignTarget.name).initialized = true;
+	variables.at(assignTarget.name).isInit = true;
 	assignFlag = true;
 }
 | WRITE {
 	assignFlag = false;
 	writeFlag = true;
 } value COLON {
-	Identifier ide = idStack.at(expressionArguments[0]);
+	Variable ide = variables.at(expressionArguments[0]);
 
-	if(ide.type == "NUM") {
+	if(ide.type == NUMBER) {
 		setRegister("B", ide.name);
-		removeIdentifier(ide.name);
-	} else if(ide.type == "IDE") {
-		memToRegister(ide.mem, "B");
+		popVariable(ide.name);
+	} else if(ide.type == IDENTIFIER) {
+		memToRegister(ide.memory, "B");
 	} else {
-		Identifier index = idStack.at(argumentsTabIndex[0]);
-		if(index.type == "NUM") {
-			long long int tabElMem = ide.mem + stoll(index.name) + 1 - ide.beginTable;
+		Variable index = variables.at(argumentsTabIndex[0]);
+		if(index.type == NUMBER) {
+			long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
 			memToRegister(tabElMem, "B");
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		} else {
 			arrayIndexToRegister(ide, index, "B");
 		}
 	}
-	pushCommand("PUT B"); //todo many register
+	pushCommand("PUT B"); 
 	assignFlag = true;
 	writeFlag = false;
 	expressionArguments[0] = "-1";
@@ -263,27 +254,27 @@ command: identifier ASSIGN {
 | newlabel condition {
 	assignFlag = true;
 	depth++;
-	jumpStack.insert(jumpStack.begin() + indextj, tj);
-	for(int i=indextj; i<jumpStack.size(); ++i) {
-		jumpStack[i].depth = depth;
+	jumps.insert(jumps.begin() + indextj, tj);
+	for(int i=indextj; i<jumps.size(); ++i) {
+		jumps[i].depth = depth;
 	}
 }  DO commands ENDWHILE {
 	long long int stack;
-	long long int jumpCount = jumpStack.size()-1;
-	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
-		stack = jumpStack.at(jumpCount-2).placeInStack;
+	long long int jumpCount = jumps.size()-1;
+	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
+		stack = jumps.at(jumpCount-2).placeInStack;
 		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount-1).placeInStack, code.size());
+		jumps.pop_back();
 	}
 	else {
-		stack = jumpStack.at(jumpCount-1).placeInStack;
+		stack = jumps.at(jumpCount-1).placeInStack;
 		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
 	}
-	jumpStack.pop_back();
-	jumpStack.pop_back();
+	jumps.pop_back();
+	jumps.pop_back();
 
 	depth--;
 	assignFlag = true;
@@ -292,25 +283,25 @@ command: identifier ASSIGN {
 	assignFlag = true;
 	depth++;
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
+	newJump(&j, code.size(), depth);
+	jumps.push_back(j);
 } commands newlabel condition ENDDO {
 	long long int stack;
-	long long int jumpCount = jumpStack.size()-1;
-	if(jumpCount > 2 && jumpStack.at(jumpCount-2).depth == depth) {
-		stack = jumpStack.at(jumpCount-2).placeInStack;
+	long long int jumpCount = jumps.size()-1;
+	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
+		stack = jumps.at(jumpCount-2).placeInStack;
 		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		addInt(jumpStack.at(jumpCount-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		addInt(jumps.at(jumpCount-1).placeInStack, code.size());
+		jumps.pop_back();
 	}
 	else {
-		stack = jumpStack.at(jumpCount-1).placeInStack;
+		stack = jumps.at(jumpCount-1).placeInStack;
 		pushCommand("JUMP", stack);
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
 	}
-	jumpStack.pop_back();
-	jumpStack.pop_back();
+	jumps.pop_back();
+	jumps.pop_back();
 
 	depth--;
 	assignFlag = true;
@@ -320,40 +311,40 @@ command: identifier ASSIGN {
 
 ifbody: ELSE {
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
+	newJump(&j, code.size(), depth);
+	jumps.push_back(j);
 	
 	pushCommand("JUMP");
-	long long int jumpCount = jumpStack.size()-2;
-	Jump jump = jumpStack.at(jumpCount);
-	addInt(jump.placeInStack, codeStack.size());
+	long long int jumpCount = jumps.size()-2;
+	Jump jump = jumps.at(jumpCount);
+	addInt(jump.placeInStack, code.size());
 	
 	jumpCount--;
-	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
 	}
-	/*registerValue = -1;*/
+	
 	assignFlag = true;
 } commands ENDIF {
-	addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
+	addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
 
-	jumpStack.pop_back();
-	jumpStack.pop_back();
-	if(jumpStack.size() >= 1 && jumpStack.at(jumpStack.size()-1).depth == depth) {
-		jumpStack.pop_back();
+	jumps.pop_back();
+	jumps.pop_back();
+	if(jumps.size() >= 1 && jumps.at(jumps.size()-1).depth == depth) {
+		jumps.pop_back();
 	}
 	depth--;
 	assignFlag = true;
 }
 | ENDIF {
-	long long int jumpCount = jumpStack.size()-1;
-	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
+	long long int jumpCount = jumps.size()-1;
+	addInt(jumps.at(jumpCount).placeInStack, code.size());
 	jumpCount--;
-	if(jumpCount >= 0 && jumpStack.at(jumpCount).depth == depth) {
-		addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
+		addInt(jumps.at(jumpCount).placeInStack, code.size());
+		jumps.pop_back();
 	}
-	jumpStack.pop_back();
+	jumps.pop_back();
 	depth--;
 	assignFlag = true;
 }
@@ -361,174 +352,174 @@ ifbody: ELSE {
 
 
 forbody: TO value DO {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == "NUM") {
+	if(a.type == NUMBER) {
 		setRegister("B", a.name);
-		removeIdentifier(a.name);
+		popVariable(a.name);
 	}
-	else if(a.type == "IDE") {
-		memToRegister(a.mem, "B");
+	else if(a.type == IDENTIFIER) {
+		memToRegister(a.memory, "B");
 	}
 	else {
-		Identifier index = idStack.at(argumentsTabIndex[0]);
-		if(index.type == "NUM") {
-			long long int tabElMem = a.mem + stoll(index.name) + 1;
+		Variable index = variables.at(argumentsTabIndex[0]);
+		if(index.type == NUMBER) {
+			long long int tabElMem = a.memory + stoll(index.name) + 1;
 			memToRegister(tabElMem, "B");
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		}
 		else {
 			arrayIndexToRegister(a, index, "B");
 		}
 	}
-	registerToMem("B", assignTarget.mem);
-	idStack.at(assignTarget.name).initialized = true;
+	registerToMem("B", assignTarget.memory);
+	variables.at(assignTarget.name).isInit = true;
 
-	if(a.type != "ARR" && b.type != "ARR")
-		sub(b, a, 1, 1);
+	if(a.type != ARRAY && b.type != ARRAY)
+		substract(b, a, 1, 1);
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
-		subTab(b, a, bI, aI, 1, 1);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+		arraySubstract(b, a, bI, aI, 1, 1);
 		argumentsTabIndex[0] = "-1";
 		argumentsTabIndex[1] = "-1";
 	}
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
 
-	Identifier s;
+	Variable s;
 	std::string name = "C" + std::to_string(depth);
-	createIdentifier(&s, name, true, "IDE");
-	insertIdentifier(name, s);
+	newVariable(&s, name, true, IDENTIFIER);
+	insertVariable(name, s);
 
-	registerToMem("B",idStack.at(name).mem);
-	forStack.push_back(idStack.at(assignTarget.name));
+	registerToMem("B",variables.at(name).memory);
+	forVariables.push_back(variables.at(assignTarget.name));
 
 	pushCommand("JZERO B");
 	Jump jj;
-	createJump(&jj, codeStack.size(), depth);
-	jumpStack.push_back(jj);
+	newJump(&jj, code.size(), depth);
+	jumps.push_back(jj);
 
-	memToRegister(idStack.at(name).mem, "B");
+	memToRegister(variables.at(name).memory, "B");
 	
-	addInt(jumpStack.at(jumpStack.size()-1).placeInStack-1, codeStack.size());
+	addInt(jumps.at(jumps.size()-1).placeInStack-1, code.size());
 
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
+	newJump(&j, code.size(), depth);
+	jumps.push_back(j);
 	pushCommand("JZERO B");
 	pushCommand("DEC B");
-	registerToMem("B", idStack.at(name).mem);
+	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
 
 } commands ENDFOR {
-	Identifier iterator = forStack.at(forStack.size()-1);
-	memToRegister(iterator.mem, "B");
+	Variable iterator = forVariables.at(forVariables.size()-1);
+	memToRegister(iterator.memory, "B");
 	pushCommand("INC B");
-	registerToMem("B", iterator.mem);
+	registerToMem("B", iterator.memory);
 
-	long long int jumpCount = jumpStack.size()-1;
-	long long int stack = jumpStack.at(jumpCount-1).placeInStack;
+	long long int jumpCount = jumps.size()-1;
+	long long int stack = jumps.at(jumpCount-1).placeInStack;
 	pushCommand("JUMP", stack);
-	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-	jumpStack.pop_back();
-	jumpStack.pop_back();
+	addInt(jumps.at(jumpCount).placeInStack, code.size());
+	jumps.pop_back();
+	jumps.pop_back();
 	
 	std::string name = "C" + std::to_string(depth);
 	
-	removeIdentifier(name); //#tu
-	removeIdentifier(iterator.name);
-	forStack.pop_back();
+	popVariable(name); 
+	popVariable(iterator.name);
+	forVariables.pop_back();
 
 	depth--;
 	assignFlag = true;
 }
 | DOWNTO value DO {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == "NUM") {
+	if(a.type == NUMBER) {
 		setRegister("B", a.name);
-		removeIdentifier(a.name);
+		popVariable(a.name);
 	}
-	else if(a.type == "IDE") {
-		memToRegister(a.mem, "B");
+	else if(a.type == IDENTIFIER) {
+		memToRegister(a.memory, "B");
 	}
 	else {
-		Identifier index = idStack.at(argumentsTabIndex[0]);
-		if(index.type == "NUM") {
-			long long int tabElMem = a.mem + stoll(index.name) + 1;
+		Variable index = variables.at(argumentsTabIndex[0]);
+		if(index.type == NUMBER) {
+			long long int tabElMem = a.memory + stoll(index.name) + 1;
 			memToRegister(tabElMem, "B");
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		}
 		else {
 			arrayIndexToRegister(a, index, "B");
 		}
 	}
-	registerToMem("B", assignTarget.mem);
-	idStack.at(assignTarget.name).initialized = true;
+	registerToMem("B", assignTarget.memory);
+	variables.at(assignTarget.name).isInit = true;
 
-	if(a.type != "ARR" && b.type != "ARR")
-		sub(a, b, 1, 1);
+	if(a.type != ARRAY && b.type != ARRAY)
+		substract(a, b, 1, 1);
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
-		subTab(a, b, aI, bI, 1, 1);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+		arraySubstract(a, b, aI, bI, 1, 1);
 		argumentsTabIndex[0] = "-1";
 		argumentsTabIndex[1] = "-1";
 	}
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
 
-	Identifier s;
+	Variable s;
 	std::string name = "C" + std::to_string(depth);
-	createIdentifier(&s, name, true, "IDE");
-	insertIdentifier(name, s);
+	newVariable(&s, name, true, IDENTIFIER);
+	insertVariable(name, s);
 
-	registerToMem("B",idStack.at(name).mem);
-	forStack.push_back(idStack.at(assignTarget.name));
+	registerToMem("B",variables.at(name).memory);
+	forVariables.push_back(variables.at(assignTarget.name));
 
 	pushCommand("JZERO B");
 	Jump jj;
-	createJump(&jj, codeStack.size(), depth);
-	jumpStack.push_back(jj);
+	newJump(&jj, code.size(), depth);
+	jumps.push_back(jj);
 
-	memToRegister(idStack.at(name).mem, "B");
+	memToRegister(variables.at(name).memory, "B");
 	
-	addInt(jumpStack.at(jumpStack.size()-1).placeInStack-1, codeStack.size());
+	addInt(jumps.at(jumps.size()-1).placeInStack-1, code.size());
 
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
+	newJump(&j, code.size(), depth);
+	jumps.push_back(j);
 	pushCommand("JZERO B");
 	pushCommand("DEC B");
-	registerToMem("B", idStack.at(name).mem);
+	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
 
 } commands ENDFOR {
-	Identifier iterator = forStack.at(forStack.size()-1);
-	memToRegister(iterator.mem, "B");
+	Variable iterator = forVariables.at(forVariables.size()-1);
+	memToRegister(iterator.memory, "B");
 	pushCommand("DEC B");
-	registerToMem("B", iterator.mem);
+	registerToMem("B", iterator.memory);
 
-	long long int jumpCount = jumpStack.size()-1;
-	long long int stack = jumpStack.at(jumpCount-1).placeInStack;
+	long long int jumpCount = jumps.size()-1;
+	long long int stack = jumps.at(jumpCount-1).placeInStack;
 	pushCommand("JUMP", stack);
-	addInt(jumpStack.at(jumpCount).placeInStack, codeStack.size());
-	jumpStack.pop_back();
-	jumpStack.pop_back();
+	addInt(jumps.at(jumpCount).placeInStack, code.size());
+	jumps.pop_back();
+	jumps.pop_back();
 
 	std::string name = "C" + std::to_string(depth);
-	removeIdentifier(name);//#tu
-	removeIdentifier(iterator.name);
-	forStack.pop_back();
+	popVariable(name);
+	popVariable(iterator.name);
+	forVariables.pop_back();
 
 	depth--;
 	assignFlag = true;
@@ -536,20 +527,20 @@ forbody: TO value DO {
 ;
 
 expression: value {
-	Identifier ide = idStack.at(expressionArguments[0]);
-	if(ide.type == "NUM") {
+	Variable ide = variables.at(expressionArguments[0]);
+	if(ide.type == NUMBER) {
 		setRegister("B", ide.name);
-		removeIdentifier(ide.name);
+		popVariable(ide.name);
 	}
-	else if(ide.type == "IDE") {
-		memToRegister(ide.mem, "B");
+	else if(ide.type == IDENTIFIER) {
+		memToRegister(ide.memory, "B");
 	}
 	else {
-		Identifier index = idStack.at(argumentsTabIndex[0]);
-		if(index.type == "NUM") {
-			long long int tabElMem = ide.mem + stoll(index.name) + 1 - ide.beginTable;
+		Variable index = variables.at(argumentsTabIndex[0]);
+		if(index.type == NUMBER) {
+			long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
 			memToRegister(tabElMem, "B");
-			removeIdentifier(index.name);
+			popVariable(index.name);
 		}
 		else {
 			arrayIndexToRegister(ide, index,"B");
@@ -561,17 +552,17 @@ expression: value {
 	}
 }
 | value ADD value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
-	if(a.type != "ARR" && b.type != "ARR")
-		add(a, b);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
+	if(a.type != ARRAY && b.type != ARRAY)
+		addition(a, b);
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
-		addTab(a, b, aI, bI);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+		arrayAddition(a, b, aI, bI);
 		argumentsTabIndex[0] = "-1";
 		argumentsTabIndex[1] = "-1";
 	}
@@ -579,17 +570,17 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value SUB value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
-	if(a.type != "ARR" && b.type != "ARR")
-		sub(a, b, 0, 1);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
+	if(a.type != ARRAY && b.type != ARRAY)
+		substract(a, b, 0, 1);
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
-		subTab(a, b, aI, bI, 0, 1);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+		arraySubstract(a, b, aI, bI, 0, 1);
 		argumentsTabIndex[0] = "-1";
 		argumentsTabIndex[1] = "-1";
 	}
@@ -597,124 +588,124 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value MUL value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
-	Identifier aI, bI;
-	if(idStack.count(argumentsTabIndex[0]) > 0)
-		aI = idStack.at(argumentsTabIndex[0]);
-	if(idStack.count(argumentsTabIndex[1]) > 0)
-		bI = idStack.at(argumentsTabIndex[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
+	Variable aI, bI;
+	if(variables.count(argumentsTabIndex[0]) > 0)
+		aI = variables.at(argumentsTabIndex[0]);
+	if(variables.count(argumentsTabIndex[1]) > 0)
+		bI = variables.at(argumentsTabIndex[1]);
 
-	if(a.type == "NUM" && b.type == "NUM") {
+	if(a.type == NUMBER && b.type == NUMBER) {
 		long long int val = stoll(a.name) * stoll(b.name);
 		setRegister("B", std::to_string(val));
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 	}
-	else if(a.type == "NUM" && isPowerOfTwo(stoll(a.name)) > 0) {
+	else if(a.type == NUMBER && isPowerOfTwo(stoll(a.name)) > 0) {
 		
 		int times = isPowerOfTwo(stoll(a.name));                                                 
-		if(b.type == "IDE")
-			memToRegister(b.mem, "B");
-		else if(b.type == "ARR" && bI.type == "NUM") {
-			long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+		if(b.type == IDENTIFIER)
+			memToRegister(b.memory, "B");
+		else if(b.type == ARRAY && bI.type == NUMBER) {
+			long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
 			memToRegister(addr, "B");
-			removeIdentifier(bI.name);
+			popVariable(bI.name);
 		}
 		else {
 			arrayIndexToRegister(b, bI, "B");
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 
-		removeIdentifier(a.name);
+		popVariable(a.name);
 	}
-	else if(b.type == "NUM" && isPowerOfTwo(stoll(b.name)) > 0) {
+	else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
 		
 		int times = isPowerOfTwo(stoll(b.name));
 
-		if(a.type == "IDE")
-			memToRegister(a.mem, "B");
-		else if(a.type == "ARR" && aI.type == "NUM") {
-			long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+		if(a.type == IDENTIFIER)
+			memToRegister(a.memory, "B");
+		else if(a.type == ARRAY && aI.type == NUMBER) {
+			long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
 			memToRegister(addr, "B");
-			removeIdentifier(aI.name);
+			popVariable(aI.name);
 		}
 		else {
 			arrayIndexToRegister(a, aI, "B");
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
 		for(int i=0; i<times; ++i) {
 			pushCommand("ADD B B");
 		}
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 
-		removeIdentifier(b.name);
+		popVariable(b.name);
 	}
 	else {
-		if(a.type == "NUM") {
+		if(a.type == NUMBER) {
 			setRegister("B", a.name);
-		} else if(a.type == "IDE") {
-			memToRegister(a.mem, "B");
-		} else if(a.type == "ARR") {
-			if(aI.type == "IDE")
+		} else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
+		} else if(a.type == ARRAY) {
+			if(aI.type == IDENTIFIER)
 				arrayIndexToRegister(a, aI, "B");
 			else {
-				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
 				memToRegister(addr, "B");
-				removeIdentifier(aI.name);
+				popVariable(aI.name);
 			}
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
-		if(b.type == "NUM") {
+		if(b.type == NUMBER) {
 			setRegister("C", b.name);
-		} else if(b.type == "IDE") {
-			memToRegister(b.mem, "C");
-		} else if(b.type == "ARR") {
-			if(bI.type == "IDE")
+		} else if(b.type == IDENTIFIER) {
+			memToRegister(b.memory, "C");
+		} else if(b.type == ARRAY) {
+			if(bI.type == IDENTIFIER)
 				arrayIndexToRegister(b, bI, "C");
 			else {
-				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
 				memToRegister(addr, "C");
-				removeIdentifier(bI.name);
+				popVariable(bI.name);
 			}
 		}
 		
-		pushCommand("JZERO C ",codeStack.size()+10);  
+		pushCommand("JZERO C ",code.size()+10);  
 		pushCommand("SUB D D");
-		pushCommand("JZERO B", codeStack.size()+9); 
-		pushCommand("JODD B ", codeStack.size()+2); 
-		pushCommand("JUMP", codeStack.size()+2);
+		pushCommand("JZERO B", code.size()+9); 
+		pushCommand("JODD B ", code.size()+2); 
+		pushCommand("JUMP", code.size()+2);
 		pushCommand("ADD D C");
 		pushCommand("HALF B");
 		pushCommand("ADD C C");
-		pushCommand("JUMP",codeStack.size()-6);
-		pushCommand("JUMP",codeStack.size()+2);
+		pushCommand("JUMP",code.size()-6);
+		pushCommand("JUMP",code.size()+2);
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 
 		pushCommand("SUB D D");
 		pushCommand("COPY B D");	
@@ -726,157 +717,157 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value DIV value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
-	Identifier aI, bI;
-	if(idStack.count(argumentsTabIndex[0]) > 0)
-		aI = idStack.at(argumentsTabIndex[0]);
-	if(idStack.count(argumentsTabIndex[1]) > 0)
-		bI = idStack.at(argumentsTabIndex[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
+	Variable aI, bI;
+	if(variables.count(argumentsTabIndex[0]) > 0)
+		aI = variables.at(argumentsTabIndex[0]);
+	if(variables.count(argumentsTabIndex[1]) > 0)
+		bI = variables.at(argumentsTabIndex[1]);
 
-	if(b.type == "NUM" && stoll(b.name) == 0) {
+	if(b.type == NUMBER && stoll(b.name) == 0) {
 		setRegister("B", "0");
 	}
-	else if(a.type == "NUM" && stoll(a.name) == 0) {
+	else if(a.type == NUMBER && stoll(a.name) == 0) {
 		setRegister("B", "0");
 	}
-	else if(b.type == "NUM" && isPowerOfTwo(stoll(b.name)) > 0) {
+	else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
 		
 		int times = isPowerOfTwo(stoll(b.name));
 		
-		if(a.type == "NUM") {
+		if(a.type == NUMBER) {
 			setRegister("B", a.name);
-			removeIdentifier(a.name);
-		} else if(a.type == "IDE") {
-			memToRegister(a.mem, "B");
-		} else if(a.type == "ARR") {
-			if(aI.type == "IDE")
+			popVariable(a.name);
+		} else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
+		} else if(a.type == ARRAY) {
+			if(aI.type == IDENTIFIER)
 				arrayIndexToRegister(a, aI, "B");
 			else {
-				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
 				memToRegister(addr, "B");
-				removeIdentifier(aI.name);
+				popVariable(aI.name);
 			}
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
 		for(int i=0; i<times; ++i) {
 			pushCommand("HALF B");
 		}
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 	}
-	else if(a.type == "NUM" && b.type == "NUM") {
+	else if(a.type == NUMBER && b.type == NUMBER) {
 		long long int val = stoll(a.name) / stoll(b.name);
 		setRegister("B", std::to_string(val));
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 	} else {
-		if(a.type == "NUM") {
+		if(a.type == NUMBER) {
 			setRegister("B", a.name);
-			removeIdentifier(a.name);
-		} else if(a.type == "IDE") {
-			memToRegister(a.mem, "B");
-		} else if(a.type == "ARR") {
-			if(aI.type == "IDE")
+			popVariable(a.name);
+		} else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
+		} else if(a.type == ARRAY) {
+			if(aI.type == IDENTIFIER)
 				arrayIndexToRegister(a, aI, "B");
 			else {
-				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
 				memToRegister(addr, "B");
-				removeIdentifier(aI.name);
+				popVariable(aI.name);
 			}
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
-		if(b.type == "NUM") {
+		if(b.type == NUMBER) {
 			setRegister("C", b.name);
-			removeIdentifier(b.name);
-		} else if(b.type == "IDE") {
-			memToRegister(b.mem, "C");
-		} else if(b.type == "ARR") {
-			if(bI.type == "IDE")
+			popVariable(b.name);
+		} else if(b.type == IDENTIFIER) {
+			memToRegister(b.memory, "C");
+		} else if(b.type == ARRAY) {
+			if(bI.type == IDENTIFIER)
 				arrayIndexToRegister(b, bI, "C");
 			else {
-				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
 				memToRegister(addr, "C");
-				removeIdentifier(bI.name);
+				popVariable(bI.name);
 			}
 		}
 		
 		Jump juma;
-		createJump(&juma, codeStack.size(), depth);
-		jumpStack.push_back(juma);
+		newJump(&juma, code.size(), depth);
+		jumps.push_back(juma);
 		pushCommand("JZERO C");
 
 		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
 			memToRegister("E");
-		// if(freeRegisters < 4)
-		// 	registerToMem("E");
+		
+		
 
 		pushCommand("SUB E E"); 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
-		pushCommand("JZERO D",codeStack.size()+3); 
+		pushCommand("JZERO D",code.size()+3); 
 		pushCommand("SUB B B");
-		pushCommand("JUMP", codeStack.size()+35); 
+		pushCommand("JUMP", code.size()+35); 
 		
 		pushCommand("COPY D B");
 		pushCommand("SUB D C");
-		pushCommand("JZERO D",codeStack.size()+2);
-		pushCommand("JUMP",codeStack.size()+4); 
+		pushCommand("JZERO D",code.size()+2);
+		pushCommand("JUMP",code.size()+4); 
 		pushCommand("SUB B B");
 		pushCommand("INC B");
-		pushCommand("JUMP", codeStack.size()+28); 
+		pushCommand("JUMP", code.size()+28); 
 
 		pushCommand("COPY D C");
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP",codeStack.size()+3);
+		pushCommand("JZERO A",code.size()+2);
+		pushCommand("JUMP",code.size()+3);
 		pushCommand("ADD D D");
-		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("JUMP",code.size()-5);
 		pushCommand("COPY A C");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP", codeStack.size()+10);
+		pushCommand("JZERO A",code.size()+2);
+		pushCommand("JUMP", code.size()+10);
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+4);
+		pushCommand("JZERO A",code.size()+4);
 		pushCommand("HALF D");
 		pushCommand("ADD E E"); 
-		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("JUMP",code.size()-5);
 		pushCommand("SUB B D");
 		pushCommand("INC E"); 
-		pushCommand("JUMP",codeStack.size()-12);
+		pushCommand("JUMP",code.size()-12);
 		pushCommand("COPY A D"); 
 		pushCommand("SUB A C"); 
-		pushCommand("JZERO A", codeStack.size()+4); 
+		pushCommand("JZERO A", code.size()+4); 
 		pushCommand("ADD E E"); 
 		pushCommand("HALF D");
-		pushCommand("JUMP", codeStack.size()-5);
+		pushCommand("JUMP", code.size()-5);
 		pushCommand("COPY B E");
-		pushCommand("JUMP", codeStack.size()+2);
+		pushCommand("JUMP", code.size()+2);
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 
 		pushCommand("SUB B B");
 
 		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") != freeRegisters.end() )
 			memToRegister("E");
-		// if(freeRegisters < 4)
-			// memToRegister("E");
+		
+			
 	}
 
 
@@ -886,102 +877,102 @@ expression: value {
 	expressionArguments[1] = "-1";
 }
 | value MOD value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
-	Identifier aI, bI;
-	if(idStack.count(argumentsTabIndex[0]) > 0)
-		aI = idStack.at(argumentsTabIndex[0]);
-	if(idStack.count(argumentsTabIndex[1]) > 0)
-		bI = idStack.at(argumentsTabIndex[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
+	Variable aI, bI;
+	if(variables.count(argumentsTabIndex[0]) > 0)
+		aI = variables.at(argumentsTabIndex[0]);
+	if(variables.count(argumentsTabIndex[1]) > 0)
+		bI = variables.at(argumentsTabIndex[1]);
 
-	if(b.type == "NUM" && stoll(b.name) == 0) {
+	if(b.type == NUMBER && stoll(b.name) == 0) {
 		setRegister("B", "0");
 	}
-	else if(a.type == "NUM" && stoll(a.name) == 0) {
+	else if(a.type == NUMBER && stoll(a.name) == 0) {
 		setRegister("B", "0");
 	}
-	else if(a.type == "NUM" && b.type == "NUM") {
+	else if(a.type == NUMBER && b.type == NUMBER) {
 		long long int val = stoll(a.name) % stoll(b.name);
 		setRegister("B", std::to_string(val));
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 	} else {
-		if(a.type == "NUM") {
+		if(a.type == NUMBER) {
 			setRegister("B", a.name);
-			removeIdentifier(a.name);
-		} else if(a.type == "IDE") {
-			memToRegister(a.mem, "B");
-		} else if(a.type == "ARR") {
-			if(aI.type == "IDE")
+			popVariable(a.name);
+		} else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
+		} else if(a.type == ARRAY) {
+			if(aI.type == IDENTIFIER)
 				arrayIndexToRegister(a, aI, "B");
 			else {
-				long long int addr = a.mem + stoll(aI.name) + 1 - a.beginTable;
+				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
 				memToRegister(addr, "B");
-				removeIdentifier(aI.name);
+				popVariable(aI.name);
 			}
 		}
 		
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 
-		if(b.type == "NUM") {
+		if(b.type == NUMBER) {
 			setRegister("C", b.name);
-			removeIdentifier(b.name);
-		} else if(b.type == "IDE") {
-			memToRegister(b.mem, "C");
-		} else if(b.type == "ARR") {
-			if(bI.type == "IDE")
+			popVariable(b.name);
+		} else if(b.type == IDENTIFIER) {
+			memToRegister(b.memory, "C");
+		} else if(b.type == ARRAY) {
+			if(bI.type == IDENTIFIER)
 				arrayIndexToRegister(b, bI, "C");
 			else {
-				long long int addr = b.mem + stoll(bI.name) + 1 - b.beginTable;
+				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
 				memToRegister(addr, "C");
-				removeIdentifier(bI.name);
+				popVariable(bI.name);
 			}
 		}
 		
 		Jump juma;
-		createJump(&juma, codeStack.size(), depth);
-		jumpStack.push_back(juma);
+		newJump(&juma, code.size(), depth);
+		jumps.push_back(juma);
 		pushCommand("JZERO C");
 
 		pushCommand("COPY D C");
 		pushCommand("SUB D B");
-		pushCommand("JZERO D",codeStack.size()+2); 
-		pushCommand("JUMP", codeStack.size()+25); 
+		pushCommand("JZERO D",code.size()+2); 
+		pushCommand("JUMP", code.size()+25); 
 		
 		pushCommand("COPY D B");
 		pushCommand("SUB D C");
-		pushCommand("JZERO D",codeStack.size()+2);
-		pushCommand("JUMP",codeStack.size()+3); 
+		pushCommand("JZERO D",code.size()+2);
+		pushCommand("JUMP",code.size()+3); 
 		pushCommand("SUB B B");
-		pushCommand("JUMP", codeStack.size()+19); 
+		pushCommand("JUMP", code.size()+19); 
 
 		pushCommand("COPY D C");
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP",codeStack.size()+3);
+		pushCommand("JZERO A",code.size()+2);
+		pushCommand("JUMP",code.size()+3);
 		pushCommand("ADD D D");
-		pushCommand("JUMP",codeStack.size()-5);
+		pushCommand("JUMP",code.size()-5);
 		pushCommand("COPY A C");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+2);
-		pushCommand("JUMP", codeStack.size()+8);
+		pushCommand("JZERO A",code.size()+2);
+		pushCommand("JUMP", code.size()+8);
 		pushCommand("COPY A D");
 		pushCommand("SUB A B");
-		pushCommand("JZERO A",codeStack.size()+3);
+		pushCommand("JZERO A",code.size()+3);
 		pushCommand("HALF D");
-		pushCommand("JUMP",codeStack.size()-4);
+		pushCommand("JUMP",code.size()-4);
 		pushCommand("SUB B D");
-		pushCommand("JUMP",codeStack.size()-10);
-		pushCommand("JUMP", codeStack.size()+2);
+		pushCommand("JUMP",code.size()-10);
+		pushCommand("JUMP", code.size()+2);
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size());
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size());
+		jumps.pop_back();
 
 		pushCommand("SUB B B");			
 	}
@@ -995,49 +986,49 @@ expression: value {
 ;
 
 condition: value EQ value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == "NUM" && b.type == "NUM") {
+	if(a.type == NUMBER && b.type == NUMBER) {
 		if(stoll(a.name) == stoll(b.name))
 			setRegister("B", "1");
 		else
 			setRegister("B", "0");
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		std::cout << "jump na " << codeStack.size() << " d:" << depth << "\n";
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		std::cout << "jump na " << code.size() << " d:" << depth << "\n";
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 	}
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
 
-		if(a.type != "ARR" && b.type != "ARR")
-			sub(b, a, 0, 0);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(b, a, 0, 0);
 		else
-			subTab(b, a, bI, aI, 0, 0);
+			arraySubstract(b, a, bI, aI, 0, 0);
 
-		pushCommand("JZERO B", codeStack.size()+2);
+		pushCommand("JZERO B", code.size()+2);
 		Jump j;
-		createJump(&j, codeStack.size(), depth);
-		jumpStack.push_back(j);
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
 		pushCommand("JUMP");
 
-		if(a.type != "ARR" && b.type != "ARR")
-			sub(a, b, 0, 1);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(a, b, 0, 1);
 		else
-			subTab(a, b, aI, bI, 0, 1);
+			arraySubstract(a, b, aI, bI, 0, 1);
 
-		pushCommand("JZERO B", codeStack.size()+2);
+		pushCommand("JZERO B", code.size()+2);
 		Jump jj;
-		createJump(&jj, codeStack.size(), depth);
-		jumpStack.push_back(jj);
+		newJump(&jj, code.size(), depth);
+		jumps.push_back(jj);
 		pushCommand("JUMP");
 	}
 
@@ -1047,50 +1038,50 @@ condition: value EQ value {
 	argumentsTabIndex[1] = "-1";
 }
 | value NEQ value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == "NUM" && b.type == "NUM") {
+	if(a.type == NUMBER && b.type == NUMBER) {
 		if(stoll(a.name) != stoll(b.name))
 			setRegister("B", "1");
 		else
 			setRegister("B", "0");
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 		Jump jum;
-		createJump(&jum, codeStack.size(), depth);
-		std::cout << "jump na " << codeStack.size() << " d:" << depth << "\n";
-		jumpStack.push_back(jum);
+		newJump(&jum, code.size(), depth);
+		std::cout << "jump na " << code.size() << " d:" << depth << "\n";
+		jumps.push_back(jum);
 		pushCommand("JZERO B");
 	}
 	else {
-		Identifier aI, bI;
-		if(idStack.count(argumentsTabIndex[0]) > 0)
-			aI = idStack.at(argumentsTabIndex[0]);
-		if(idStack.count(argumentsTabIndex[1]) > 0)
-			bI = idStack.at(argumentsTabIndex[1]);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
 
-		if(a.type != "ARR" && b.type != "ARR")
-			sub(b, a, 0, 0);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(b, a, 0, 0);
 		else
-			subTab(b, a, bI, aI, 0, 0);
+			arraySubstract(b, a, bI, aI, 0, 0);
 
-		pushCommand("JZERO B", codeStack.size()+2);
+		pushCommand("JZERO B", code.size()+2);
 		Jump j;
-		createJump(&j, codeStack.size(), depth);
-		jumpStack.push_back(j);
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
 		pushCommand("JUMP");
 
-		if(a.type != "ARR" && b.type != "ARR")
-			sub(a, b, 0, 1);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(a, b, 0, 1);
 		else
-			subTab(a, b, aI, bI, 0, 1);
+			arraySubstract(a, b, aI, bI, 0, 1);
 
-		addInt(jumpStack.at(jumpStack.size()-1).placeInStack, codeStack.size()+1);
-		jumpStack.pop_back();
+		addInt(jumps.at(jumps.size()-1).placeInStack, code.size()+1);
+		jumps.pop_back();
 		Jump jj;
-		createJump(&jj, codeStack.size(), depth);
-		jumpStack.push_back(jj);
+		newJump(&jj, code.size(), depth);
+		jumps.push_back(jj);
 		pushCommand("JZERO B");
 	}
 
@@ -1100,140 +1091,140 @@ condition: value EQ value {
 	argumentsTabIndex[1] = "-1";
 }
 | value LT value {
-	Identifier a = idStack.at(expressionArguments[0]);
-	Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+	Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == "NUM" && b.type == "NUM") {
+	if(a.type == NUMBER && b.type == NUMBER) {
 		if(stoll(a.name) < stoll(b.name))
 			setRegister("B","1");
 		else
 			setRegister("B","0");
-		removeIdentifier(a.name);
-		removeIdentifier(b.name);
+		popVariable(a.name);
+		popVariable(b.name);
 	}
 	else {
-		if(a.type != "ARR" && b.type != "ARR")
-			sub(b, a, 0, 1);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(b, a, 0, 1);
 		else {
-			Identifier aI, bI;
-			if(idStack.count(argumentsTabIndex[0]) > 0)
-				aI = idStack.at(argumentsTabIndex[0]);
-			if(idStack.count(argumentsTabIndex[1]) > 0)
-				bI = idStack.at(argumentsTabIndex[1]);
-			subTab(b, a, bI, aI, 0, 1);
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+			arraySubstract(b, a, bI, aI, 0, 1);
 			argumentsTabIndex[0] = "-1";
 			argumentsTabIndex[1] = "-1";
 		}
 	}
 
 	Jump j;
-	createJump(&j, codeStack.size(), depth);
-	jumpStack.push_back(j);
+	newJump(&j, code.size(), depth);
+	jumps.push_back(j);
 	pushCommand("JZERO B");
 
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
 }
 | value GT value {
-	Identifier a = idStack.at(expressionArguments[0]);
-        Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+        Variable b = variables.at(expressionArguments[1]);
 
-        if(a.type == "NUM" && b.type == "NUM") {
+        if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(b.name) < stoll(a.name))
                 setRegister("B", "1");
             else
                 setRegister("B", "0");
-            removeIdentifier(a.name);
-            removeIdentifier(b.name);
+            popVariable(a.name);
+            popVariable(b.name);
         }
         else {
-            if(a.type != "ARR" && b.type != "ARR")
-                sub(a, b, 0, 1);
+            if(a.type != ARRAY && b.type != ARRAY)
+                substract(a, b, 0, 1);
             else {
-                Identifier aI, bI;
-                if(idStack.count(argumentsTabIndex[0]) > 0)
-                    aI = idStack.at(argumentsTabIndex[0]);
-                if(idStack.count(argumentsTabIndex[1]) > 0)
-                    bI = idStack.at(argumentsTabIndex[1]);
-                subTab(a, b, aI, bI, 0, 1);
+                Variable aI, bI;
+                if(variables.count(argumentsTabIndex[0]) > 0)
+                    aI = variables.at(argumentsTabIndex[0]);
+                if(variables.count(argumentsTabIndex[1]) > 0)
+                    bI = variables.at(argumentsTabIndex[1]);
+                arraySubstract(a, b, aI, bI, 0, 1);
                 argumentsTabIndex[0] = "-1";
                 argumentsTabIndex[1] = "-1";
             }
         }
 
         Jump j;
-        createJump(&j, codeStack.size(), depth);
-        jumpStack.push_back(j);;
+        newJump(&j, code.size(), depth);
+        jumps.push_back(j);;
         pushCommand("JZERO B");
 
         expressionArguments[0] = "-1";
         expressionArguments[1] = "-1";
 }
 | value LE value {
-	Identifier a = idStack.at(expressionArguments[0]);
-        Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+        Variable b = variables.at(expressionArguments[1]);
 
-        if(a.type == "NUM" && b.type == "NUM") {
+        if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(a.name) <= stoll(b.name))
                 setRegister("B", "1");
             else
                 setRegister("B", "0");
-            removeIdentifier(a.name);
-            removeIdentifier(b.name);
+            popVariable(a.name);
+            popVariable(b.name);
         }
         else {
-            if(a.type != "ARR" && b.type != "ARR")
-                sub(b, a, 1, 1);
+            if(a.type != ARRAY && b.type != ARRAY)
+                substract(b, a, 1, 1);
             else {
-                Identifier aI, bI;
-                if(idStack.count(argumentsTabIndex[0]) > 0)
-                    aI = idStack.at(argumentsTabIndex[0]);
-                if(idStack.count(argumentsTabIndex[1]) > 0)
-                    bI = idStack.at(argumentsTabIndex[1]);
-                subTab(b, a, bI, aI, 1, 1);
+                Variable aI, bI;
+                if(variables.count(argumentsTabIndex[0]) > 0)
+                    aI = variables.at(argumentsTabIndex[0]);
+                if(variables.count(argumentsTabIndex[1]) > 0)
+                    bI = variables.at(argumentsTabIndex[1]);
+                arraySubstract(b, a, bI, aI, 1, 1);
                 argumentsTabIndex[0] = "-1";
                 argumentsTabIndex[1] = "-1";
             }
         }
 
         Jump j;
-        createJump(&j, codeStack.size(), depth);
-        jumpStack.push_back(j);
+        newJump(&j, code.size(), depth);
+        jumps.push_back(j);
         pushCommand("JZERO B");
 
         expressionArguments[0] = "-1";
         expressionArguments[1] = "-1";
 }
 | value GE value {
-	Identifier a = idStack.at(expressionArguments[0]);
-        Identifier b = idStack.at(expressionArguments[1]);
+	Variable a = variables.at(expressionArguments[0]);
+        Variable b = variables.at(expressionArguments[1]);
 
-        if(a.type == "NUM" && b.type == "NUM") {
+        if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(a.name) >= stoll(b.name))
                 setRegister("B", "1");
             else
                 setRegister("B", "0");
-            removeIdentifier(a.name);
-            removeIdentifier(b.name);
+            popVariable(a.name);
+            popVariable(b.name);
         }
         else {
-            if(a.type != "ARR" && b.type != "ARR")
-                sub(a, b, 1, 1);
+            if(a.type != ARRAY && b.type != ARRAY)
+                substract(a, b, 1, 1);
             else {
-                Identifier aI, bI;
-                if(idStack.count(argumentsTabIndex[0]) > 0)
-                    aI = idStack.at(argumentsTabIndex[0]);
-                if(idStack.count(argumentsTabIndex[1]) > 0)
-                    bI = idStack.at(argumentsTabIndex[1]);
-                subTab(a, b, aI, bI, 1, 1);
+                Variable aI, bI;
+                if(variables.count(argumentsTabIndex[0]) > 0)
+                    aI = variables.at(argumentsTabIndex[0]);
+                if(variables.count(argumentsTabIndex[1]) > 0)
+                    bI = variables.at(argumentsTabIndex[1]);
+                arraySubstract(a, b, aI, bI, 1, 1);
                 argumentsTabIndex[0] = "-1";
                 argumentsTabIndex[1] = "-1";
             }
         }
 
         Jump j;
-        createJump(&j, codeStack.size(), depth);
-        jumpStack.push_back(j);
+        newJump(&j, code.size(), depth);
+        jumps.push_back(j);
         pushCommand("JZERO B");
 
         expressionArguments[0] = "-1";
@@ -1245,12 +1236,12 @@ condition: value EQ value {
 
 value: NUM {
 	if(assignFlag){
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Próba przypisania do stałej." << std::endl;
+		std::cout << "Error [linia " << yylineno << "]: Próba przypisania do stałej." << std::endl;
 		exit(1);
 	}
-	Identifier s;
-	createIdentifier(&s, $1, false, "NUM");
-	insertIdentifier($1, s);
+	Variable s;
+	newVariable(&s, $1, false, NUMBER);
+	insertVariable($1, s);
 	if (expressionArguments[0] == "-1"){
 		expressionArguments[0] = $1;
 	}
@@ -1262,14 +1253,14 @@ value: NUM {
 ;
 
 identifier: IDENT {
-	if(idStack.find($1) == idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
+	if(variables.find($1) == variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
 	} 
-	if(!idStack.at($1).isTable) {
+	if(!variables.at($1).isTable) {
 		if(!assignFlag) {
-			if(!idStack.at($1).initialized) {
-				std::cout << "Błąd [okolice linii " << yylineno << "]: Użyta niezainicjowana zmienna " << $<str>1 << std::endl;
+			if(!variables.at($1).isInit) {
+				std::cout << "Error [linia " << yylineno << "]: Użyta niezainicjowana zmienna " << $<str>1 << std::endl;
 				exit(1);
 			}
 			if (expressionArguments[0] == "-1"){
@@ -1279,38 +1270,38 @@ identifier: IDENT {
 				expressionArguments[1] = $1;
 			}
 		} else {
-			assignTarget = idStack.at($1);
+			assignTarget = variables.at($1);
 		}
 	} else {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
+		std::cout << "Error [linia " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
 		exit(1);
 	}
 }
 | IDENT LB IDENT RB {
-	if(idStack.find($1) == idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
+	if(variables.find($1) == variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
 	} 
-	if(idStack.find($3) == idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Niezadeklarowana zmienna " << $<str>3 << std::endl;
+	if(variables.find($3) == variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>3 << std::endl;
 		exit(1);
 	} 
 
-	if(!idStack.at($1).isTable) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
+	if(!variables.at($1).isTable) {
+		std::cout << "Error [linia " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
 		exit(1);
 	} else {
-		if(idStack.at($3).isTable) {
-			std::cout << "Błąd [okolice linii " << yylineno << "]: Indeks tablicy nie może być zmienną tablicową!" << std::endl;
+		if(variables.at($3).isTable) {
+			std::cout << "Error [linia " << yylineno << "]: Indeks tablicy nie może być zmienną tablicową!" << std::endl;
 			exit(1);
 		}
-		if(!idStack.at($3).initialized) {
-			std::cout << "Błąd [okolice linii " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
+		if(!variables.at($3).isInit) {
+			std::cout << "Error [linia " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
 			exit(1);
 		}
 		
 		if(false) { 
-			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
+			std::cout << "Error [linia " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
 			exit(1);
 		}
 
@@ -1324,28 +1315,28 @@ identifier: IDENT {
 				argumentsTabIndex[1] = $3;
 			}
 		} else {
-			assignTarget = idStack.at($1);
+			assignTarget = variables.at($1);
 			tabAssignTargetIndex = $3;
 		}
 	}
 }
 | IDENT LB NUM RB {
-	if(idStack.find($1) == idStack.end()) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
+	if(variables.find($1) == variables.end()) {
+		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
 	}
-	if(!idStack.at($1).isTable) {
-		std::cout << "Błąd [okolice linii " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
+	if(!variables.at($1).isTable) {
+		std::cout << "Error [linia " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
 		exit(1);
 	} else {
-		if(!(idStack.at($1).beginTable <= atoll($3) && idStack.at($1).endTable >= atoll($3))) {
-			std::cout << "Błąd [okolice linii " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
+		if(!(variables.at($1).beginTable <= atoll($3) && variables.at($1).endTable >= atoll($3))) {
+			std::cout << "Error [linia " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
 			exit(1);
 		}
 
-		Identifier s;
-		createIdentifier(&s, $3, false, "NUM");
-		insertIdentifier($3, s);
+		Variable s;
+		newVariable(&s, $3, false, NUMBER);
+		insertVariable($3, s);
 
 		if(!assignFlag){
 			if (expressionArguments[0] == "-1"){
@@ -1358,7 +1349,7 @@ identifier: IDENT {
 			}
 		}
 		else {
-			assignTarget = idStack.at($1);
+			assignTarget = variables.at($1);
 			tabAssignTargetIndex = $3;
 		}
 	}
@@ -1385,51 +1376,51 @@ identifier: IDENT {
 
 
 
-void createJump(Jump *j, long long int stack, long long int depth) {
+void newJump(Jump *j, long long int stack, long long int depth) {
     j->placeInStack = stack;
     j->depth = depth;
 }
 
 void addInt(long long int command, long long int val) {
-    codeStack.at(command) = codeStack.at(command) + " " + std::to_string(val);
+    code.at(command) = code.at(command) + " " + std::to_string(val);
 }
 
-void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
+void substract(Variable a, Variable b, int isINC, int remove) {
 	
-    if(a.type == "NUM" && b.type == "NUM") {
+    if(a.type == NUMBER && b.type == NUMBER) {
         long long int val = std::max(stoll(a.name) + isINC - stoll(b.name), (long long int) 0);
         setRegister("B", std::to_string(val));
-        if(isRemoval) {
-            removeIdentifier(a.name);
-            removeIdentifier(b.name);
+        if(remove) {
+            popVariable(a.name);
+            popVariable(b.name);
         }
     }
-    else if(a.type == "NUM" && b.type == "IDE") {
+    else if(a.type == NUMBER && b.type == IDENTIFIER) {
         setRegister("B", std::to_string(stoll(a.name) + isINC));
-		memToRegister(b.mem, "C");
+		memToRegister(b.memory, "C");
         pushCommand("SUB B C");
-        if(isRemoval)
-            removeIdentifier(a.name);
+        if(remove)
+            popVariable(a.name);
     }
-    else if(a.type == "IDE" && b.type == "NUM") {
+    else if(a.type == IDENTIFIER && b.type == NUMBER) {
         setRegister("C", b.name);
-		memToRegister(a.mem, "B");
+		memToRegister(a.memory, "B");
 		if(isINC) {
 			pushCommand("INC B");
 		}
         pushCommand("SUB B C");
-        if(isRemoval)
-            removeIdentifier(b.name);
+        if(remove)
+            popVariable(b.name);
     }
-    else if(a.type == "IDE" && b.type == "IDE") {
+    else if(a.type == IDENTIFIER && b.type == IDENTIFIER) {
         if(a.name == b.name) {
             pushCommand("SUB B B");
             if(isINC)
                 pushCommand("INC B");
         }
         else {
-            memToRegister(a.mem, "B");
-			memToRegister(b.mem, "C");
+            memToRegister(a.memory, "B");
+			memToRegister(b.memory, "C");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
@@ -1437,29 +1428,29 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
     }
 }
 
- void subTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex, int isINC, int isRemoval) {
-    if(a.type == "NUM" && b.type == "ARR") {
-        if(bIndex.type == "NUM") {
-            long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+ void arraySubstract(Variable a, Variable b, Variable aIndex, Variable bIndex, int isINC, int remove) {
+    if(a.type == NUMBER && b.type == ARRAY) {
+        if(bIndex.type == NUMBER) {
+            long long int addr = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             setRegister("B", std::to_string(stoll(a.name) + isINC));
 			memToRegister(addr, "C");
             pushCommand("SUB B C");
-            if(isRemoval) {
-                removeIdentifier(a.name);
-                removeIdentifier(bIndex.name);
+            if(remove) {
+                popVariable(a.name);
+                popVariable(bIndex.name);
             }
         }
-        else if(bIndex.type == "IDE") {
+        else if(bIndex.type == IDENTIFIER) {
             arrayIndexToRegister(b, bIndex, "C");
             setRegister("B", std::to_string(stoll(a.name) + isINC));
             pushCommand("SUB B C");
-            if(isRemoval)
-                removeIdentifier(a.name);
+            if(remove)
+                popVariable(a.name);
         }
     }
-    else if(a.type == "ARR" && b.type == "NUM") {
-        if(aIndex.type == "NUM") {
-            long long int addr = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
+    else if(a.type == ARRAY && b.type == NUMBER) {
+        if(aIndex.type == NUMBER) {
+            long long int addr = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
 
 			setRegister("C", b.name);
 			memToRegister(addr, "B");
@@ -1467,12 +1458,12 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
 				pushCommand("INC B");
 			pushCommand("SUB B C");
             
-            if(isRemoval) {
-                removeIdentifier(b.name);
-                removeIdentifier(aIndex.name);
+            if(remove) {
+                popVariable(b.name);
+                popVariable(aIndex.name);
             }
         }
-        else if(aIndex.type == "IDE") {
+        else if(aIndex.type == IDENTIFIER) {
 			arrayIndexToRegister(a, aIndex, "B");   
 			setRegister("C", b.name);
 			
@@ -1481,53 +1472,53 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
 
 			pushCommand("SUB B C");
 		
-			if(isRemoval)
-				removeIdentifier(b.name);
+			if(remove)
+				popVariable(b.name);
         }
     }
-    else if(a.type == "IDE" && b.type == "ARR") {
-        if(bIndex.type == "NUM") {
-            long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
-            memToRegister(a.mem, "B");
+    else if(a.type == IDENTIFIER && b.type == ARRAY) {
+        if(bIndex.type == NUMBER) {
+            long long int addr = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
+            memToRegister(a.memory, "B");
 			memToRegister(addr, "C");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
-            if(isRemoval)
-                removeIdentifier(bIndex.name);
+            if(remove)
+                popVariable(bIndex.name);
         }
-        else if(bIndex.type == "IDE") {
+        else if(bIndex.type == IDENTIFIER) {
             arrayIndexToRegister(b, bIndex, "C");
-            memToRegister(a.mem, "B");
+            memToRegister(a.memory, "B");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
         }
     }
-    else if(a.type == "ARR" && b.type == "IDE") {
-        if(aIndex.type == "NUM") {
-            long long int addr = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
-            memToRegister(b.mem, "C");
+    else if(a.type == ARRAY && b.type == IDENTIFIER) {
+        if(aIndex.type == NUMBER) {
+            long long int addr = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
+            memToRegister(b.memory, "C");
 			memToRegister(addr, "B");
 			
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
-            if(isRemoval)
-                removeIdentifier(aIndex.name);
+            if(remove)
+                popVariable(aIndex.name);
         }
-        else if(aIndex.type == "IDE") {
+        else if(aIndex.type == IDENTIFIER) {
             arrayIndexToRegister(a, aIndex, "B");
-            memToRegister(b.mem, "C");
+            memToRegister(b.memory, "C");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
         }
     }
-    else if(a.type == "ARR" && b.type == "ARR") {
-        if(aIndex.type == "NUM" && bIndex.type == "NUM") {
-            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
-            long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+    else if(a.type == ARRAY && b.type == ARRAY) {
+        if(aIndex.type == NUMBER && bIndex.type == NUMBER) {
+            long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
+            long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
                 pushCommand("SUB B B");
                 if(isINC)
@@ -1540,32 +1531,32 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
                     pushCommand("INC B");
                 pushCommand("SUB B C");
             }
-            if(isRemoval) {
-                removeIdentifier(aIndex.name);
-                removeIdentifier(bIndex.name);
+            if(remove) {
+                popVariable(aIndex.name);
+                popVariable(bIndex.name);
             }
         }
-        else if(aIndex.type == "NUM" && bIndex.type == "IDE") {
-            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
+        else if(aIndex.type == NUMBER && bIndex.type == IDENTIFIER) {
+            long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
             arrayIndexToRegister(b, bIndex, "C");
             memToRegister(addrA, "B");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
-            if(isRemoval)
-                removeIdentifier(aIndex.name);
+            if(remove)
+                popVariable(aIndex.name);
         }
-        else if(aIndex.type == "IDE" && bIndex.type == "NUM") {
-            long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+        else if(aIndex.type == IDENTIFIER && bIndex.type == NUMBER) {
+            long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             arrayIndexToRegister(a, aIndex, "B");
             memToRegister(addrB, "C");
             if(isINC)
                 pushCommand("INC B");
             pushCommand("SUB B C");
-            if(isRemoval)
-                removeIdentifier(bIndex.name);
+            if(remove)
+                popVariable(bIndex.name);
         }
-        else if(aIndex.type == "IDE" && bIndex.type == "IDE") {
+        else if(aIndex.type == IDENTIFIER && bIndex.type == IDENTIFIER) {
             if(a.name == b.name && aIndex.name == bIndex.name) {
                 pushCommand("SUB B B");
                 if(isINC)
@@ -1582,53 +1573,53 @@ void sub(Identifier a, Identifier b, int isINC, int isRemoval) {
     }
 }
 
-void add(Identifier a, Identifier b) {
-	if(a.type == "NUM" && b.type == "NUM") {
+void addition(Variable a, Variable b) {
+	if(a.type == NUMBER && b.type == NUMBER) {
 		long long int val = stoll(a.name) + stoll(b.name);
         setRegister("B", std::to_string(val));
-        removeIdentifier(a.name);
-        removeIdentifier(b.name);
-	} else if((a.type == "NUM" && b.type == "IDE") || (b.type == "NUM" && a.type == "IDE")) {
-		Identifier c = ((a.type == "NUM") ? a : b);
-		Identifier d = ((a.type == "NUM") ? b : a);
+        popVariable(a.name);
+        popVariable(b.name);
+	} else if((a.type == NUMBER && b.type == IDENTIFIER) || (b.type == NUMBER && a.type == IDENTIFIER)) {
+		Variable c = ((a.type == NUMBER) ? a : b);
+		Variable d = ((a.type == NUMBER) ? b : a);
 		if(stoll(c.name) <= 3) {
-			memToRegister(d.mem, "B");
+			memToRegister(d.memory, "B");
             for(int i=0; i < stoll(c.name); i++) {
                 pushCommand("INC B");
             }
-            removeIdentifier(c.name);
+            popVariable(c.name);
         }
         else {
             setRegister("B", c.name);
-			memToRegister(d.mem, "C");
+			memToRegister(d.memory, "C");
             pushCommand("ADD B C");
-            removeIdentifier(c.name);
+            popVariable(c.name);
         }
-	} else if(a.type == "IDE" && b.type == "IDE") {
+	} else if(a.type == IDENTIFIER && b.type == IDENTIFIER) {
 		if(a.name == b.name) {
-            memToRegister(a.mem, "B");
+            memToRegister(a.memory, "B");
             pushCommand("ADD B B");
         }
         else {
-            memToRegister(a.mem, "B");
-			memToRegister(b.mem, "C");
+            memToRegister(a.memory, "B");
+			memToRegister(b.memory, "C");
             pushCommand("ADD B C");
         }
 	}
 }
-void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
+void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
 	
-	if((a.type == "NUM" && b.type == "ARR") || (a.type == "ARR" && b.type == "NUM")) {
-		if(a.type == "ARR") {
-			Identifier temp = a;
+	if((a.type == NUMBER && b.type == ARRAY) || (a.type == ARRAY && b.type == NUMBER)) {
+		if(a.type == ARRAY) {
+			Variable temp = a;
 			a = b;
 			b = temp;
 			temp = aIndex;
 			aIndex = bIndex;
 			bIndex = temp;
 		}
-        if(bIndex.type == "NUM") { 
-            long long int addr = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+        if(bIndex.type == NUMBER) { 
+            long long int addr = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
 
 			if(stoll(a.name) <= 3) {
 				memToRegister(addr, "B");
@@ -1642,10 +1633,10 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 				pushCommand("ADD B C");
             }
 
-            removeIdentifier(a.name);
-            removeIdentifier(bIndex.name);
+            popVariable(a.name);
+            popVariable(bIndex.name);
         }
-        else if(bIndex.type == "IDE") { 
+        else if(bIndex.type == IDENTIFIER) { 
 
             arrayIndexToRegister(b, bIndex, "B");
 
@@ -1658,13 +1649,13 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 				pushCommand("ADD B C");
             }
 
-            removeIdentifier(a.name);
+            popVariable(a.name);
         }
     }
-    else if((a.type == "IDE" && b.type == "ARR") | (a.type == "ARR" && b.type == "IDE") ) {
-		Identifier cIndex;
-		if(a.type == "ARR") {
-			Identifier temp = a;
+    else if((a.type == IDENTIFIER && b.type == ARRAY) | (a.type == ARRAY && b.type == IDENTIFIER) ) {
+		Variable cIndex;
+		if(a.type == ARRAY) {
+			Variable temp = a;
 			a = b;
 			b = temp;
 			cIndex = aIndex;
@@ -1672,23 +1663,23 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 			cIndex = bIndex;
 		}
     
-        if(cIndex.type == "NUM") { 
-			long long int addr = b.mem + stoll(cIndex.name) + 1 - b.beginTable;
-			memToRegister(a.mem, "B");
+        if(cIndex.type == NUMBER) { 
+			long long int addr = b.memory + stoll(cIndex.name) + 1 - b.beginTable;
+			memToRegister(a.memory, "B");
 			memToRegister(addr, "C");
             pushCommand("ADD B C");
-            removeIdentifier(cIndex.name);
+            popVariable(cIndex.name);
         }
-        else if(cIndex.type == "IDE") { 
+        else if(cIndex.type == IDENTIFIER) { 
 			arrayIndexToRegister(b, cIndex, "B"); 
-			memToRegister(a.mem, "C");
+			memToRegister(a.memory, "C");
 			pushCommand("ADD B C");
         }
     }
-    else if(a.type == "ARR" && b.type == "ARR") {
-        if(aIndex.type == "NUM" && bIndex.type == "NUM") {
-            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
-            long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+    else if(a.type == ARRAY && b.type == ARRAY) {
+        if(aIndex.type == NUMBER && bIndex.type == NUMBER) {
+            long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
+            long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
                 memToRegister(addrA, "B");
                 pushCommand("ADD B B");
@@ -1698,24 +1689,24 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
 				memToRegister(addrB, "C");
                 pushCommand("ADD B C");
             }
-            removeIdentifier(aIndex.name);
-            removeIdentifier(bIndex.name);
+            popVariable(aIndex.name);
+            popVariable(bIndex.name);
         }
-        else if(aIndex.type == "NUM" && bIndex.type == "IDE") { 
-            long long int addrA = a.mem + stoll(aIndex.name) + 1 - a.beginTable;
+        else if(aIndex.type == NUMBER && bIndex.type == IDENTIFIER) { 
+            long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
 			arrayIndexToRegister(b, bIndex, "B");
 			memToRegister(addrA, "C");
 			pushCommand("ADD B C");
-            removeIdentifier(aIndex.name);
+            popVariable(aIndex.name);
         }
-        else if(aIndex.type == "IDE" && bIndex.type == "NUM") {
-			long long int addrB = b.mem + stoll(bIndex.name) + 1 - b.beginTable;
+        else if(aIndex.type == IDENTIFIER && bIndex.type == NUMBER) {
+			long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
 			arrayIndexToRegister(a, aIndex, "B");
 			memToRegister(addrB, "C");
 			pushCommand("ADD B C");
-            removeIdentifier(bIndex.name);
+            popVariable(bIndex.name);
         }
-        else if(aIndex.type == "IDE" && bIndex.type == "IDE") {
+        else if(aIndex.type == IDENTIFIER && bIndex.type == IDENTIFIER) {
             if(a.name == b.name && aIndex.name == bIndex.name) {
                 arrayIndexToRegister(a, aIndex, "B");
 				pushCommand("ADD B B");
@@ -1730,10 +1721,10 @@ void addTab(Identifier a, Identifier b, Identifier aIndex, Identifier bIndex) {
     }
 }
 
-void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg) {
-	long long int offset = tab.mem + 1;
+void arrayIndexToRegister(Variable tab, Variable index, std::string reg) {
+	long long int offset = tab.memory + 1;
 	if(index.inRegister == "NULL") {
-		memToRegister(index.mem, "C");
+		memToRegister(index.memory, "C");
 	} else {
 		pushCommand("COPY C " + index.inRegister);
 	}
@@ -1746,9 +1737,7 @@ void arrayIndexToRegister(Identifier tab, Identifier index, std::string reg) {
 
 void setRegister(std::string reg, std::string number) {
     long long int n = stoll(number);
-	/*if (n == registerValue) {
-		return;
-	}*/
+	
     std::string bin = decToBin(n);
 	long long int limit = bin.size();
    
@@ -1756,20 +1745,20 @@ void setRegister(std::string reg, std::string number) {
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
 			pushCommand("INC " + reg);
-			/*registerValue++;*/
+			
 		}
 		if(i < (limit - 1)){
 	        pushCommand("ADD " + reg + " " + reg);
-	        /*registerValue *= 2;*/
+	        
 		}
 	}
 }
 
 void memToRegister(std::string reg) {
 	long long int mem;
-	for (std::map<std::string, Identifier>::iterator it=idStack.begin(); it!=idStack.end(); ++it) {
+	for (std::map<std::string, Variable>::iterator it=variables.begin(); it!=variables.end(); ++it) {
 		if(it->second.inRegister == reg) {
-			mem = it->second.mem;
+			mem = it->second.memory;
 			break;
 		}
 	}
@@ -1780,11 +1769,11 @@ void memToRegister(std::string reg) {
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
 			pushCommand("INC A");
-			/*registerValue++;*/
+			
 		}
 		if(i < (limit - 1)){
 	        pushCommand("ADD A A");
-	        /*registerValue *= 2;*/
+	        
 		}
 	}
     pushCommand("LOAD " + reg); 
@@ -1793,8 +1782,8 @@ void memToRegister(long long int mem, std::string reg) {
 
 	std::string srcReg;
 	bool flag = false;
-	for (std::map<std::string, Identifier>::iterator it=idStack.begin(); it!=idStack.end(); ++it) {
-		if(it->second.mem == mem && it->second.inRegister != "NULL") {
+	for (std::map<std::string, Variable>::iterator it=variables.begin(); it!=variables.end(); ++it) {
+		if(it->second.memory == mem && it->second.inRegister != "NULL") {
 			srcReg = it->second.inRegister;
 			flag = true;
 			break;
@@ -1810,11 +1799,11 @@ void memToRegister(long long int mem, std::string reg) {
 		for(long long int i = 0; i < limit; ++i){
 			if(bin[i] == '1'){
 				pushCommand("INC A");
-				/*registerValue++;*/
+				
 			}
 			if(i < (limit - 1)){
 				pushCommand("ADD A A");
-				/*registerValue *= 2;*/
+				
 			}
 		}
 		pushCommand("LOAD " + reg); 
@@ -1829,9 +1818,9 @@ std::string decToBin(long long int n) {
 
 void registerToMem(std::string reg) {
 	long long int mem;
-	for (std::map<std::string, Identifier>::iterator it=idStack.begin(); it!=idStack.end(); ++it) {
+	for (std::map<std::string, Variable>::iterator it=variables.begin(); it!=variables.end(); ++it) {
 		if(it->second.inRegister == reg ) {
-			mem = it->second.mem;
+			mem = it->second.memory;
 			break;
 		}
 	}
@@ -1842,11 +1831,11 @@ void registerToMem(std::string reg) {
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
 			pushCommand("INC A");
-			/*registerValue++;*/
+			
 		}
 		if(i < (limit - 1)){
 	        pushCommand("ADD A A");
-	        /*registerValue *= 2;*/
+	        
 		}
 	}
     pushCommand("STORE " + reg); 
@@ -1855,8 +1844,8 @@ void registerToMem(std::string reg, long long int mem) {
 	
 	std::string srcReg;
 	bool flag = false;
-	for (std::map<std::string, Identifier>::iterator it=idStack.begin(); it!=idStack.end(); ++it) {
-		if(it->second.mem == mem && it->second.inRegister != "NULL") {
+	for (std::map<std::string, Variable>::iterator it=variables.begin(); it!=variables.end(); ++it) {
+		if(it->second.memory == mem && it->second.inRegister != "NULL") {
 			srcReg = it->second.inRegister;
 			flag = true;
 			break;
@@ -1872,92 +1861,92 @@ void registerToMem(std::string reg, long long int mem) {
 		for(long long int i = 0; i < limit; ++i){
 			if(bin[i] == '1'){
 				pushCommand("INC A");
-				/*registerValue++;*/
+				
 			}
 			if(i < (limit - 1)){
 				pushCommand("ADD A A");
-				/*registerValue *= 2;*/
+				
 			}
 		}
 		pushCommand("STORE " + reg); 
 	}
 }
 
-void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type) {
+void newVariable(Variable* id, std::string name, bool isLocal, Type type) {
 	id->name = name;
-	id->mem = memCounter;
+	id->memory = memCounter;
 	id->type = type;
-	id->initialized = false;
-	id->local = isLocal;
+	id->isInit = false;
+	id->isLocal = isLocal;
 	id->isTable = false;
 	id->beginTable = -1;
 	id->endTable = -1;
 
-	if(type != "IDE")
+	if(type != IDENTIFIER)
 		id->inRegister = "NULL";
 	else
 		id->inRegister = registerValue();
 }
-void createIdentifier(Identifier* id, std::string name, bool isLocal, std::string type, long long int begin, long long int end) {
+void newVariable(Variable* id, std::string name, bool isLocal, Type type, long long int begin, long long int end) {
 	id->name = name;
-	id->mem = memCounter;
+	id->memory = memCounter;
 	id->type = type;
-	id->initialized = false;
-	id->local = isLocal;
+	id->isInit = false;
+	id->isLocal = isLocal;
 	id->isTable = true;
 	id->beginTable = begin;
 	id->endTable = end;
 	id->inRegister = "NULL";
 }
-void removeIdentifier(std::string key) {
-    if(idStack.count(key) > 0) {
-		std::string reg = idStack.at(key).inRegister;
+void popVariable(std::string key) {
+    if(variables.count(key) > 0) {
+		std::string reg = variables.at(key).inRegister;
 		if(reg != "NULL") {
 			freeRegisters.push_back(reg);
 			pushCommand("SUB " + reg + " " + reg);
 		}
-        if(idStack.at(key).counter > 0) {
-            idStack.at(key).counter = idStack.at(key).counter-1;
+        if(variables.at(key).numberAmount > 0) {
+            variables.at(key).numberAmount = variables.at(key).numberAmount-1;
         }
         else {
-            idStack.erase(key);
+            variables.erase(key);
             memCounter--;
         }
     }
 }
-void insertIdentifier(std::string key, Identifier i) {
-    if(idStack.count(key) == 0) {
-        idStack.insert(make_pair(key, i));
-        idStack.at(key).counter = 0;
+void insertVariable(std::string key, Variable i) {
+    if(variables.count(key) == 0) {
+        variables.insert(make_pair(key, i));
+        variables.at(key).numberAmount = 0;
         memCounter++;
     }
     else {
-        idStack.at(key).counter = idStack.at(key).counter+1;
+        variables.at(key).numberAmount = variables.at(key).numberAmount+1;
     }
 	if(i.inRegister != "NULL")
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << " reg:" << i.inRegister << std::endl;
 }
 
 void pushCommand(std::string str) {
-    codeStack.push_back(str);
+    code.push_back(str);
 }
 
 void pushCommand(std::string str, long long int num) {
     std::string temp = str + " " + std::to_string(num);
-    codeStack.push_back(temp);
+    code.push_back(temp);
 }
 
 void printStdCode() {
 	long long int i;
-	for(i = 0; i < codeStack.size(); i++)
-        std::cout << codeStack.at(i) << std::endl;
+	for(i = 0; i < code.size(); i++)
+        std::cout << code.at(i) << std::endl;
 }
 
 void printCode(std::string filename) {
 	std::ofstream out_code(filename);
 	long long int i;
-	for(i = 0; i < codeStack.size(); i++)
-        out_code << codeStack.at(i) << std::endl;
+	for(i = 0; i < code.size(); i++)
+        out_code << code.at(i) << std::endl;
 }
 
 int isPowerOfTwo(long long int x) {
@@ -1982,17 +1971,17 @@ std::string registerValue() {
 	} else {
 		return "NULL";
 	}
-	// std::string registersTab[] = {"NULL","H","G","F","E"};
-	// if(freeRegisters == 0) {
-	// 	return registersTab[0];
-	// } else {
-	// 	freeRegisters--;
-	// 	return registersTab[freeRegisters+1];
-	// }
+	
+	
+	
+	
+	
+	
+	
 }
 
 int yyerror(const std::string s) {
-	std::cout << "Błąd [około linii " << yylineno << "]: " << s << std::endl;
+	std::cout << "Error [około linii " << yylineno << "]: " << s << std::endl;
 	exit(1);
 }
 
@@ -2009,7 +1998,7 @@ int main (int argc, char** argv) {
 	freeRegisters.push_back("F");
 	freeRegisters.push_back("E");
 	
-	//freeRegisters = 4;
+	
 
 	yyin = fopen(argv[1], "r");
     yyparse();
