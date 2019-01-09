@@ -23,7 +23,7 @@ typedef struct {
     long long int codePosition, depth;
 } Jump;
 
-long long int memCounter, depth;
+long long int memoryIndex, depth;
 bool assignFlag, writeFlag;
 std::vector<std::string> freeRegisters;
 Jump tj;
@@ -113,7 +113,7 @@ declarations:
 		Variable ide;
 		newVariable(&ide, $2, false, ARRAY, atoll($4), atoll($6));
 		insertVariable($2, ide);
-		memCounter = memCounter + (atoll($6) - atoll($4) + 1);       
+		memoryIndex = memoryIndex + (atoll($6) - atoll($4) + 1);       
 	}
 }
 ;
@@ -1874,7 +1874,7 @@ void registerToMem(std::string reg, long long int mem) {
 
 void newVariable(Variable* id, std::string name, bool isLocal, Type type) {
 	id->name = name;
-	id->memory = memCounter;
+	id->memory = memoryIndex;
 	id->type = type;
 	id->isInit = false;
 	id->isLocal = isLocal;
@@ -1889,7 +1889,7 @@ void newVariable(Variable* id, std::string name, bool isLocal, Type type) {
 }
 void newVariable(Variable* id, std::string name, bool isLocal, Type type, long long int begin, long long int end) {
 	id->name = name;
-	id->memory = memCounter;
+	id->memory = memoryIndex;
 	id->type = type;
 	id->isInit = false;
 	id->isLocal = isLocal;
@@ -1910,7 +1910,7 @@ void popVariable(std::string key) {
         }
         else {
             variables.erase(key);
-            memCounter--;
+            memoryIndex--;
         }
     }
 }
@@ -1918,13 +1918,13 @@ void insertVariable(std::string key, Variable i) {
     if(variables.count(key) == 0) {
         variables.insert(make_pair(key, i));
         variables.at(key).numberAmount = 0;
-        memCounter++;
+        memoryIndex++;
     }
     else {
         variables.at(key).numberAmount = variables.at(key).numberAmount+1;
     }
 	if(i.inRegister != "NULL")//debug
-    	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memCounter-1 << " reg:" << i.inRegister << std::endl;
+    	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memoryIndex-1 << " reg:" << i.inRegister << std::endl;
 }
 
 void pushCommand(std::string str) {
@@ -1983,7 +1983,7 @@ int yyerror(const std::string s) {
 int main (int argc, char** argv) {
 
 	assignFlag = true;
-	memCounter = 0;
+	memoryIndex = 0;
 	writeFlag = false;
 	depth = 0;
 
