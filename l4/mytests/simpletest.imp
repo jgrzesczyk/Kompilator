@@ -1,0 +1,8 @@
+DECLARE
+i;
+IN
+FOR j FROM 2 TO 5 DO
+i:=2;
+WRITE i;
+ENDFOR
+END

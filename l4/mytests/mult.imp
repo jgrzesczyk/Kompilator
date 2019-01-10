@@ -1,0 +1,7 @@
+DECLARE 
+x;y;
+IN
+READx;READy;
+y:=y*x;
+WRITE y;
+END

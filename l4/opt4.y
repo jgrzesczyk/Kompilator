@@ -24,10 +24,14 @@ typedef struct {
 } Jump;
 
 long long int memoryIndex, depth;
-bool assignFlag, writeFlag;
+bool assignFlag, writeFlag, preParsing;
 std::vector<std::string> freeRegisters;
 Jump tj;
 int indextj;
+
+std::vector<std::string> preParsingVars;
+std::vector<int> preParsingCount;
+int weight;
 
 std::vector<std::string> code;
 std::map<std::string, Variable> variables;
@@ -63,7 +67,9 @@ std::string decToBin(long long int);
 void registerToMem(std::string, long long int);
 void registerToMem(std::string);
 int isPowerOfTwo(long long int);
-std::string registerValue();
+std::string registerValue(std::string);
+
+void preParseVariableUsage(std::string);
 %}
 
 %define parse.error verbose
@@ -84,22 +90,26 @@ std::string registerValue();
 %%
 
 program: DECLARE declarations IN commands END {
-	pushCommand("HALT");
+	if(!preParsing)
+		pushCommand("HALT");
 }
 ;
 
 declarations: 
 | declarations IDENT COLON {
-	if(variables.find($2) != variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
-		exit(1);
-	} else {
-		Variable ide;
-		newVariable(&ide, $2, false, IDENTIFIER);
-		insertVariable($2, ide);
+	if(!preParsing) {
+		if(variables.find($2) != variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
+			exit(1);
+		} else {
+			Variable ide;
+			newVariable(&ide, $2, false, IDENTIFIER);
+			insertVariable($2, ide);
+		}
 	}
 }
 | declarations IDENT LB NUM INDEXER NUM RB COLON {
+	if(!preParsing) {
 	if(variables.find($2) != variables.end()) {
 		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
 		exit(1);
@@ -115,15 +125,18 @@ declarations:
 		insertVariable($2, ide);
 		memoryIndex = memoryIndex + (atoll($6) - atoll($4) + 1);       
 	}
+	}
 }
 ;
 
 newlabel: WHILE {
+	if(!preParsing) {
 	assignFlag = false;
 	Jump j;
 	newJump(&j, code.size(), depth);
 	tj = j;
 	indextj = jumps.size();
+	}
 }
 ;
 
@@ -132,8 +145,11 @@ commands: commands command
 ;
 
 command: identifier ASSIGN {
+	if(!preParsing) {
 	assignFlag = false;
+	}
 } expression COLON {
+	if(!preParsing) {
 	if(assignTarget.type == ARRAY) {
 		Variable index = variables.at(tabAssignTargetIndex);
 		if(index.type == NUMBER) {
@@ -165,15 +181,23 @@ command: identifier ASSIGN {
 	}
 	variables.at(assignTarget.name).isInit = true;
 	assignFlag = true;
+	}
 }
 | IF {
+	if(!preParsing) {
 	assignFlag = false;
 	depth++;
+	} else {
+		depth++;
+	}
 } condition {
+	if(!preParsing) {
 	assignFlag = true;
+	}
 } THEN commands ifbody
 
 | FOR IDENT {
+	if(!preParsing) {
 	if(variables.find($2)!=variables.end()) {
 		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << "." << std::endl;
 		exit(1);
@@ -185,11 +209,18 @@ command: identifier ASSIGN {
 	assignFlag = false;
 	assignTarget = variables.at($2);
 	depth++;
+	} else {
+		depth++;
+		weight = weight*10; 
+	}
 } FROM value forbody
 
 | READ {
+	if(!preParsing) {
 	assignFlag = true;
+	}
 } identifier COLON {
+	if(!preParsing) {
 	if(assignTarget.type == ARRAY) {
 		Variable index = variables.at(tabAssignTargetIndex);
 		if(index.type == NUMBER) {
@@ -223,11 +254,15 @@ command: identifier ASSIGN {
 	}
 	variables.at(assignTarget.name).isInit = true;
 	assignFlag = true;
+	}
 }
 | WRITE {
+	if(!preParsing) {
 	assignFlag = false;
 	writeFlag = true;
+	}
 } value COLON {
+	if(!preParsing) {
 	Variable ide = variables.at(expressionArguments[0]);
 
 	if(ide.type == NUMBER) {
@@ -250,15 +285,22 @@ command: identifier ASSIGN {
 	writeFlag = false;
 	expressionArguments[0] = "-1";
 	argumentsTabIndex[0] = "-1";
+	}
 }
 | newlabel condition {
+	if(!preParsing) {
 	assignFlag = true;
 	depth++;
 	jumps.insert(jumps.begin() + indextj, tj);
 	for(int i=indextj; i<jumps.size(); ++i) {
 		jumps[i].depth = depth;
 	}
+	} else {
+		depth++;
+		weight*=10; 
+	}
 }  DO commands ENDWHILE {
+	if(!preParsing) {
 	long long int stack;
 	long long int jumpCount = jumps.size()-1;
 	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
@@ -278,14 +320,24 @@ command: identifier ASSIGN {
 
 	depth--;
 	assignFlag = true;
+	} else{
+		depth--;
+		weight /= 10; 
+	}
 }
 | DO {
+	if(!preParsing) {
 	assignFlag = true;
 	depth++;
 	Jump j;
 	newJump(&j, code.size(), depth);
 	jumps.push_back(j);
+	} else {
+		depth++;
+		weight*=10; 
+	}
 } commands newlabel condition ENDDO {
+	if(!preParsing) {
 	long long int stack;
 	long long int jumpCount = jumps.size()-1;
 	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
@@ -305,11 +357,16 @@ command: identifier ASSIGN {
 
 	depth--;
 	assignFlag = true;
+	} else {
+		depth--;
+		weight /=10; 
+	}
 } 
 ;
 
 
 ifbody: ELSE {
+	if(!preParsing) {
 	Jump j;
 	newJump(&j, code.size(), depth);
 	jumps.push_back(j);
@@ -325,7 +382,9 @@ ifbody: ELSE {
 	}
 	
 	assignFlag = true;
+	}
 } commands ENDIF {
+	if(!preParsing) {
 	addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 
 	jumps.pop_back();
@@ -335,8 +394,12 @@ ifbody: ELSE {
 	}
 	depth--;
 	assignFlag = true;
+	} else {
+		depth--;
+	}
 }
 | ENDIF {
+	if(!preParsing) {
 	long long int jumpCount = jumps.size()-1;
 	addInt(jumps.at(jumpCount).codePosition, code.size());
 	jumpCount--;
@@ -347,11 +410,15 @@ ifbody: ELSE {
 	jumps.pop_back();
 	depth--;
 	assignFlag = true;
+	} else {
+		depth--;
+	}
 }
 ;
 
 
 forbody: TO value DO {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 
@@ -415,8 +482,11 @@ forbody: TO value DO {
 	pushCommand("DEC B");
 	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
-
+	} else {
+		preParseVariableUsage("C" + std::to_string(depth));
+	}
 } commands ENDFOR {
+	if(!preParsing) {
 	Variable iterator = forVariables.at(forVariables.size()-1);
 	memToRegister(iterator.memory, "B");
 	pushCommand("INC B");
@@ -437,8 +507,13 @@ forbody: TO value DO {
 
 	depth--;
 	assignFlag = true;
+	}else {
+		depth--;
+		weight/=10; 
+	}
 }
 | DOWNTO value DO {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 
@@ -502,8 +577,11 @@ forbody: TO value DO {
 	pushCommand("DEC B");
 	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
-
+	} else {
+		preParseVariableUsage("C" + std::to_string(depth));
+	}
 } commands ENDFOR {
+	if(!preParsing) {
 	Variable iterator = forVariables.at(forVariables.size()-1);
 	memToRegister(iterator.memory, "B");
 	pushCommand("DEC B");
@@ -523,10 +601,15 @@ forbody: TO value DO {
 
 	depth--;
 	assignFlag = true;
+	}else {
+		depth--;
+		weight/=10; 
+	}
 }
 ;
 
 expression: value {
+	if(!preParsing) {
 	Variable ide = variables.at(expressionArguments[0]);
 	if(ide.type == NUMBER) {
 		setRegister("B", ide.name);
@@ -550,8 +633,10 @@ expression: value {
 		expressionArguments[0] = "-1";
 		argumentsTabIndex[0] = "-1";
 	}
+	}
 }
 | value ADD value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 	if(a.type != ARRAY && b.type != ARRAY)
@@ -568,8 +653,10 @@ expression: value {
 	}
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 | value SUB value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 	if(a.type != ARRAY && b.type != ARRAY)
@@ -586,8 +673,10 @@ expression: value {
 	}
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 | value MUL value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 	Variable aI, bI;
@@ -715,8 +804,10 @@ expression: value {
 	argumentsTabIndex[1] = "-1";
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 | value DIV value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 	Variable aI, bI;
@@ -875,8 +966,10 @@ expression: value {
 	argumentsTabIndex[1] = "-1";
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 | value MOD value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 	Variable aI, bI;
@@ -982,10 +1075,12 @@ expression: value {
 	argumentsTabIndex[1] = "-1";
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 ;
 
 condition: value EQ value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 
@@ -998,7 +1093,6 @@ condition: value EQ value {
 		popVariable(b.name);
 		Jump jum;
 		newJump(&jum, code.size(), depth);
-		std::cout << "jump na " << code.size() << " d:" << depth << "\n";
 		jumps.push_back(jum);
 		pushCommand("JZERO B");
 	}
@@ -1036,8 +1130,10 @@ condition: value EQ value {
 	expressionArguments[1] = "-1";
 	argumentsTabIndex[0] = "-1";
 	argumentsTabIndex[1] = "-1";
+	}
 }
 | value NEQ value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 
@@ -1050,7 +1146,6 @@ condition: value EQ value {
 		popVariable(b.name);
 		Jump jum;
 		newJump(&jum, code.size(), depth);
-		std::cout << "jump na " << code.size() << " d:" << depth << "\n";
 		jumps.push_back(jum);
 		pushCommand("JZERO B");
 	}
@@ -1089,8 +1184,10 @@ condition: value EQ value {
 	expressionArguments[1] = "-1";
 	argumentsTabIndex[0] = "-1";
 	argumentsTabIndex[1] = "-1";
+	}
 }
 | value LT value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
 	Variable b = variables.at(expressionArguments[1]);
 
@@ -1124,8 +1221,10 @@ condition: value EQ value {
 
 	expressionArguments[0] = "-1";
 	expressionArguments[1] = "-1";
+	}
 }
 | value GT value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
@@ -1159,8 +1258,10 @@ condition: value EQ value {
 
         expressionArguments[0] = "-1";
         expressionArguments[1] = "-1";
+	}
 }
 | value LE value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
@@ -1194,8 +1295,10 @@ condition: value EQ value {
 
         expressionArguments[0] = "-1";
         expressionArguments[1] = "-1";
+	}
 }
 | value GE value {
+	if(!preParsing) {
 	Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
@@ -1231,10 +1334,12 @@ condition: value EQ value {
         expressionArguments[1] = "-1";
         argumentsTabIndex[0] = "-1";
         argumentsTabIndex[1] = "-1";
+	}
 }
 ;
 
 value: NUM {
+	if(!preParsing) {
 	if(assignFlag){
 		std::cout << "Error [linia " << yylineno << "]: Próba przypisania do stałej." << std::endl;
 		exit(1);
@@ -1248,11 +1353,13 @@ value: NUM {
 	else {
 		expressionArguments[1] = $1;
 	}
+	}
 }
 | identifier
 ;
 
 identifier: IDENT {
+	if(!preParsing) {
 	if(variables.find($1) == variables.end()) {
 		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
@@ -1276,8 +1383,12 @@ identifier: IDENT {
 		std::cout << "Error [linia " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
 		exit(1);
 	}
+	} else {
+		preParseVariableUsage($1);
+	}
 }
 | IDENT LB IDENT RB {
+	if(!preParsing) {
 	if(variables.find($1) == variables.end()) {
 		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
@@ -1319,8 +1430,12 @@ identifier: IDENT {
 			tabAssignTargetIndex = $3;
 		}
 	}
+	} else {
+		preParseVariableUsage($3);
+	}
 }
 | IDENT LB NUM RB {
+if(!preParsing) {
 	if(variables.find($1) == variables.end()) {
 		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
 		exit(1);
@@ -1353,7 +1468,7 @@ identifier: IDENT {
 			tabAssignTargetIndex = $3;
 		}
 	}
-
+}
 }
 ;
 %%
@@ -1885,7 +2000,7 @@ void newVariable(Variable* id, std::string name, bool isLocal, Type type) {
 	if(type != IDENTIFIER)
 		id->inRegister = "NULL";
 	else
-		id->inRegister = registerValue();
+		id->inRegister = registerValue(name);
 }
 void newVariable(Variable* id, std::string name, bool isLocal, Type type, long long int begin, long long int end) {
 	id->name = name;
@@ -1902,7 +2017,9 @@ void popVariable(std::string key) {
     if(variables.count(key) > 0) {
 		std::string reg = variables.at(key).inRegister;
 		if(reg != "NULL") {
-			freeRegisters.push_back(reg);
+			if(!(key == preParsingVars[0] || key == preParsingVars[1] || key == preParsingVars[2] || key == preParsingVars[3]))
+				freeRegisters.push_back(reg);
+			
 			pushCommand("SUB " + reg + " " + reg);
 		}
         if(variables.at(key).numberAmount > 0) {
@@ -1923,7 +2040,7 @@ void insertVariable(std::string key, Variable i) {
     else {
         variables.at(key).numberAmount = variables.at(key).numberAmount+1;
     }
-	if(i.inRegister != "NULL")//debug
+	if(i.inRegister == "NULLL")//debug
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memoryIndex-1 << " reg:" << i.inRegister << std::endl;
 }
 
@@ -1957,21 +2074,59 @@ int isPowerOfTwo(long long int x) {
 	}
 }
 
-std::string registerValue() {
-	if(freeRegisters.size() > 0) {
+std::string registerValue(std::string name) {
+	if(preParsingVars.size() >= 1 && preParsingVars[0] == name) {
+		return "H";
+	}
+	else if(preParsingVars.size() >= 2 && preParsingVars[1] == name) {
+		return "G";
+	}
+	else if(preParsingVars.size() >= 3 && preParsingVars[2] == name) {
+		return "F";
+	}
+	else if(preParsingVars.size() >= 4 && preParsingVars[3] == name) {
+		return "E";
+	}
+	else if(preParsingVars.size() >= 4) {
+		return "NULL";
+	} else {
 		std::string reg = freeRegisters.at(freeRegisters.size()-1);
 		freeRegisters.pop_back();
 		return reg;
-	} else {
-		return "NULL";
 	}
-	
-	
-	
-	
-	
-	
-	
+}
+
+void preParseVariableUsage(std::string var) {
+	int i=0;
+	while(i<preParsingVars.size()) {
+		if(preParsingVars[i] == var) {
+			preParsingCount[i] += weight; 
+			break;
+		}
+		i++;
+	}
+	if(i==preParsingVars.size()) {
+		preParsingVars.push_back(var);
+		preParsingCount.push_back(weight); 
+	}
+}
+
+void sortVariableUsage() {
+	for(int i=0; i<preParsingCount.size(); ++i) {
+		for(int j=1; j<(preParsingCount.size()-i); ++j) {
+			if(preParsingCount[j-1] < preParsingCount[j]) {
+				std::string tmp1 = preParsingVars[j-1];
+				int tmp2 = preParsingCount[j-1];
+				preParsingVars[j-1] = preParsingVars[j];
+				preParsingCount[j-1] = preParsingCount[j];
+				preParsingVars[j] = tmp1;
+				preParsingCount[j] = tmp2;
+			}
+		}
+	}
+	for(int i=0; i<preParsingVars.size(); ++i) {
+		// std::cout << preParsingVars[i] << ": " << preParsingCount[i] << " użyć" << "\n"; //debug
+	}
 }
 
 int yyerror(const std::string s) {
@@ -1986,16 +2141,27 @@ int main (int argc, char** argv) {
 	memoryIndex = 0;
 	writeFlag = false;
 	depth = 0;
-
-	freeRegisters.push_back("E");
-	freeRegisters.push_back("F");
-	freeRegisters.push_back("G");
-	freeRegisters.push_back("H");
 	
-	
-
+	preParsing = true;
+	weight = 1; 
 	yyin = fopen(argv[1], "r");
     yyparse();
+	sortVariableUsage();
+
+	preParsing = false;
+	depth = 0;
+
+	if(preParsingVars.size() < 4) {
+		int v = preParsingVars.size();
+		std::string regs[] = {"E","F","G","H"};
+		while(v < 4) {
+			freeRegisters.push_back(regs[3-v]);
+			v++;
+		}
+	}
+		
+	yyin = fopen(argv[1], "r");
+	yyparse();
 
 	if(argc < 3) {
 		return -1;
