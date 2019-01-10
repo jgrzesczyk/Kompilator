@@ -13,7 +13,7 @@ Uruchamianie programu.
 > 0
 > 0
 > 0
-Skończono program (koszt: 730).772
+Skończono program (koszt: 730).762
 
 ./4 ./officialtests/1-numbers.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -41,7 +41,7 @@ Uruchamianie programu.
 > 11
 > 707
 > 7777
-Skończono program (koszt: 5655).5646
+Skończono program (koszt: 5655).5641
 
 ./4 ./officialtests/2-fib.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:246913571 reg:E
@@ -68,7 +68,7 @@ Uruchamianie programu.
 ? 20
 > 2432902008176640000
 > 17711
-Skończono program (koszt: 27774).
+Skończono program (koszt: 27774).27569
 
 ./4 ./officialtests/4-factorial.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:102 reg:E
@@ -81,7 +81,7 @@ Skończono czytanie kodu (liczba rozkazów: 265).
 Uruchamianie programu.
 ? 20
 > 2432902008176640000
-Skończono program (koszt: 25820).17593
+Skończono program (koszt: 25820).17393
 
 ./4 ./officialtests/5-tab.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
@@ -122,7 +122,7 @@ Uruchamianie programu.
 > 46
 > 24
 > 0
-Skończono program (koszt: 21694).
+Skończono program (koszt: 21694).20924
 
 ./4 ./officialtests/6-mod-mult.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -137,7 +137,7 @@ Uruchamianie programu.
 ? 1234567890987654321
 ? 987654321
 > 674106858
-Skończono program (koszt: 250392).230301
+Skończono program (koszt: 250392).230291
 
 ./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -154,7 +154,7 @@ Uruchamianie programu.
 > 31000
 > 40900
 > 2222010
-Skończono program (koszt: 861797).188621
+Skończono program (koszt: 861797).168611
 ./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
 Add: b name: b type: 1 memory:1 reg:F
@@ -170,7 +170,7 @@ Uruchamianie programu.
 > 31001
 > 40900
 > 2222012
-Skończono program (koszt: 861797).188621
+Skończono program (koszt: 861797).168611
 
 ./4 ./officialtests/8-for.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -187,7 +187,7 @@ Uruchamianie programu.
 > 507
 > 4379
 > 0
-Skończono program (koszt: 159042).152314
+Skończono program (koszt: 159042).151749
 
 ./4 ./officialtests/9-sort.imp ./maszyna/plik.txt
 Add: x name: x type: 1 memory:23 reg:E
@@ -274,7 +274,7 @@ Uruchamianie programu.
 > 1
 > 0
 > 1
-Skończono program (koszt: 3866).
+Skończono program (koszt: 3866).3861
 
 ./4 ./officialtests/program1.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
@@ -312,7 +312,7 @@ Uruchamianie programu.
 > 83
 > 89
 > 97
-Skończono program (koszt: 56368).
+Skończono program (koszt: 56368).54388
 
 ./4 ./officialtests/program2.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
@@ -328,7 +328,7 @@ Uruchamianie programu.
 > 1
 > 14405693
 > 1
-Skończono program (koszt: 5029277).4258943
+Skończono program (koszt: 5029277).4258938
 ./4 ./officialtests/program2.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
 Add: m name: m type: 1 memory:1 reg:F
@@ -343,6 +343,6 @@ Uruchamianie programu.
 > 1
 > 4115226301
 > 1
-Skończono program (koszt: 93347660).80325261
+Skończono program (koszt: 93347660).80325256
 
 jg@jg:~/Desktop/pwr/jftt/l4$

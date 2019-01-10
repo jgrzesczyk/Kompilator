@@ -110,32 +110,32 @@ declarations:
 }
 | declarations IDENT LB NUM INDEXER NUM RB COLON {
 	if(!preParsing) {
-	if(variables.find($2) != variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
-		exit(1);
-	} else if (atoll($4) > atoll($6)) {
-        std::cout << "Error [linia " << yylineno << "]: Indeksy tablicy " << $<str>2 << " są niepoprawne" << std::endl;
-		exit(1);
-    } else if (atoll($4) < 0) {
-        std::cout << "Error [linia " << yylineno << "]: Początek tablicy o indeksie " << $<str>2 << " < 0!" << std::endl;
-		exit(1);
-    } else {
-		Variable ide;
-		newVariable(&ide, $2, false, ARRAY, atoll($4), atoll($6));
-		insertVariable($2, ide);
-		memoryIndex = memoryIndex + (atoll($6) - atoll($4) + 1);       
-	}
+		if(variables.find($2) != variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << std::endl;
+			exit(1);
+		} else if (atoll($4) > atoll($6)) {
+			std::cout << "Error [linia " << yylineno << "]: Indeksy tablicy " << $<str>2 << " są niepoprawne" << std::endl;
+			exit(1);
+		} else if (atoll($4) < 0) {
+			std::cout << "Error [linia " << yylineno << "]: Początek tablicy o indeksie " << $<str>2 << " < 0!" << std::endl;
+			exit(1);
+		} else {
+			Variable ide;
+			newVariable(&ide, $2, false, ARRAY, atoll($4), atoll($6));
+			insertVariable($2, ide);
+			memoryIndex = memoryIndex + (atoll($6) - atoll($4) + 1);       
+		}
 	}
 }
 ;
 
 newlabel: WHILE {
 	if(!preParsing) {
-	assignFlag = false;
-	Jump j;
-	newJump(&j, code.size(), depth);
-	tj = j;
-	indextj = jumps.size();
+		assignFlag = false;
+		Jump j;
+		newJump(&j, code.size(), depth);
+		tj = j;
+		indextj = jumps.size();
 	}
 }
 ;
@@ -146,69 +146,69 @@ commands: commands command
 
 command: identifier ASSIGN {
 	if(!preParsing) {
-	assignFlag = false;
+		assignFlag = false;
 	}
 } expression COLON {
 	if(!preParsing) {
-	if(assignTarget.type == ARRAY) {
-		Variable index = variables.at(tabAssignTargetIndex);
-		if(index.type == NUMBER) {
-			long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
-			registerToMem("B", tabElMem);
-			popVariable(index.name);
-		} else {
-			long long int offset = assignTarget.memory + 1;
-
-			if(index.inRegister == "NULL") {
-				memToRegister(index.memory, "C");
-				
+		if(assignTarget.type == ARRAY) {
+			Variable index = variables.at(tabAssignTargetIndex);
+			if(index.type == NUMBER) {
+				long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
+				registerToMem("B", tabElMem);
+				popVariable(index.name);
 			} else {
-				pushCommand("COPY C " + index.inRegister);
+				long long int offset = assignTarget.memory + 1;
+
+				if(index.inRegister == "NULL") {
+					memToRegister(index.memory, "C");
+					
+				} else {
+					pushCommand("COPY C " + index.inRegister);
+				}
+				setRegister("A", std::to_string(offset));
+				pushCommand("ADD A C");
+				setRegister("C", std::to_string(assignTarget.beginTable));
+				pushCommand("SUB A C");
+				pushCommand("STORE B");
 			}
-			setRegister("A", std::to_string(offset));
-			pushCommand("ADD A C");
-			setRegister("C", std::to_string(assignTarget.beginTable));
-			pushCommand("SUB A C");
-			pushCommand("STORE B");
 		}
-	}
-	else if(!assignTarget.isLocal) {
-		registerToMem("B", assignTarget.memory);
-	}
-	else {
-		std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
-		exit(1);
-	}
-	variables.at(assignTarget.name).isInit = true;
-	assignFlag = true;
+		else if(!assignTarget.isLocal) {
+			registerToMem("B", assignTarget.memory);
+		}
+		else {
+			std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+			exit(1);
+		}
+		variables.at(assignTarget.name).isInit = true;
+		assignFlag = true;
 	}
 }
 | IF {
 	if(!preParsing) {
-	assignFlag = false;
-	depth++;
+		assignFlag = false;
+		depth++;
 	} else {
 		depth++;
 	}
 } condition {
 	if(!preParsing) {
-	assignFlag = true;
+		assignFlag = true;
 	}
 } THEN commands ifbody
 
 | FOR IDENT {
 	if(!preParsing) {
-	if(variables.find($2)!=variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << "." << std::endl;
-		exit(1);
-	} else {
-		Variable i;
-		newVariable(&i, $2, true, IDENTIFIER);
-		insertVariable($2, i);
-	}
-	assignFlag = false;
-	assignTarget = variables.at($2);
-	depth++;
+		if(variables.find($2)!=variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Kolejna deklaracja zmiennej " << $<str>2 << "." << std::endl;
+			exit(1);
+		} else {
+			Variable i;
+			newVariable(&i, $2, true, IDENTIFIER);
+			insertVariable($2, i);
+		}
+		assignFlag = false;
+		assignTarget = variables.at($2);
+		depth++;
 	} else {
 		depth++;
 		weight = weight*10; 
@@ -217,109 +217,113 @@ command: identifier ASSIGN {
 
 | READ {
 	if(!preParsing) {
-	assignFlag = true;
+		assignFlag = true;
 	}
 } identifier COLON {
 	if(!preParsing) {
-	if(assignTarget.type == ARRAY) {
-		Variable index = variables.at(tabAssignTargetIndex);
-		if(index.type == NUMBER) {
-			pushCommand("GET B");
-			long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
-			registerToMem("B", tabElMem);
-			popVariable(index.name);
-		}
-		else {
-			long long int offset = assignTarget.memory + 1;
-			if(index.inRegister == "NULL") {
-				memToRegister(index.memory, "C");
-				
-			} else {
-				pushCommand("COPY C " + index.inRegister);
+		if(assignTarget.type == ARRAY) {
+			Variable index = variables.at(tabAssignTargetIndex);
+			if(index.type == NUMBER) {
+				pushCommand("GET B");
+				long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
+				registerToMem("B", tabElMem);
+				popVariable(index.name);
 			}
-			setRegister("A", std::to_string(offset));
-				pushCommand("ADD A C");
-			setRegister("C", std::to_string(assignTarget.beginTable));
-			pushCommand("SUB A C");
-			pushCommand("GET B");
-			pushCommand("STORE B");
-		}
+			else {
+				long long int offset = assignTarget.memory + 1;
+				if(index.inRegister == "NULL") {
+					memToRegister(index.memory, "C");
+					
+				} else {
+					pushCommand("COPY C " + index.inRegister);
+				}
+				setRegister("A", std::to_string(offset));
+					pushCommand("ADD A C");
+				setRegister("C", std::to_string(assignTarget.beginTable));
+				pushCommand("SUB A C");
+				pushCommand("GET B");
+				pushCommand("STORE B");
+			}
 
-	} else if(!assignTarget.isLocal) {
-		pushCommand("GET B"); 
-		registerToMem("B", assignTarget.memory);
-	} else {
-		std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
-        exit(1);
-	}
-	variables.at(assignTarget.name).isInit = true;
-	assignFlag = true;
+		} else if(!assignTarget.isLocal) {
+			if(assignTarget.inRegister == "NULL") {
+				pushCommand("GET B"); 
+				registerToMem("B", assignTarget.memory);
+			} else {
+				pushCommand("GET " + assignTarget.inRegister);
+			}
+		} else {
+			std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
+			exit(1);
+		}
+		variables.at(assignTarget.name).isInit = true;
+		assignFlag = true;
 	}
 }
 | WRITE {
 	if(!preParsing) {
-	assignFlag = false;
-	writeFlag = true;
+		assignFlag = false;
+		writeFlag = true;
 	}
 } value COLON {
 	if(!preParsing) {
-	Variable ide = variables.at(expressionArguments[0]);
+		Variable ide = variables.at(expressionArguments[0]);
 
-	if(ide.type == NUMBER) {
-		setRegister("B", ide.name);
-		popVariable(ide.name);
-	} else if(ide.type == IDENTIFIER) {
-		memToRegister(ide.memory, "B");
-	} else {
-		Variable index = variables.at(argumentsTabIndex[0]);
-		if(index.type == NUMBER) {
-			long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
-			memToRegister(tabElMem, "B");
-			popVariable(index.name);
+		if(ide.type == NUMBER) {
+			setRegister("B", ide.name);
+			popVariable(ide.name);
+		} else if(ide.type == IDENTIFIER) {
+			memToRegister(ide.memory, "B");
 		} else {
-			arrayIndexToRegister(ide, index, "B");
+			Variable index = variables.at(argumentsTabIndex[0]);
+			if(index.type == NUMBER) {
+				long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
+				memToRegister(tabElMem, "B");
+				popVariable(index.name);
+			} else {
+				arrayIndexToRegister(ide, index, "B");
+			}
 		}
-	}
-	pushCommand("PUT B"); 
-	assignFlag = true;
-	writeFlag = false;
-	expressionArguments[0] = "-1";
-	argumentsTabIndex[0] = "-1";
+		pushCommand("PUT B"); 
+		assignFlag = true;
+		writeFlag = false;
+		expressionArguments[0] = "-1";
+		argumentsTabIndex[0] = "-1";
 	}
 }
 | newlabel condition {
 	if(!preParsing) {
-	assignFlag = true;
-	depth++;
-	jumps.insert(jumps.begin() + indextj, tj);
-	for(int i=indextj; i<jumps.size(); ++i) {
-		jumps[i].depth = depth;
-	}
+		assignFlag = true;
+		depth++;
+		jumps.insert(jumps.begin() + indextj, tj);
+		for(int i=indextj; i<jumps.size(); ++i) {
+			jumps[i].depth = depth;
+		}
 	} else {
 		depth++;
 		weight*=10; 
 	}
 }  DO commands ENDWHILE {
 	if(!preParsing) {
-	long long int stack;
-	long long int jumpCount = jumps.size()-1;
-	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
-		stack = jumps.at(jumpCount-2).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
-		addInt(jumps.at(jumpCount-1).codePosition, code.size());
+		long long int stack;
+		long long int jumpCount = jumps.size()-1;
+		if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
+			stack = jumps.at(jumpCount-2).codePosition;
+			pushCommand("JUMP", stack);
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addInt(jumps.at(jumpCount-1).codePosition, code.size());
+			jumps.pop_back();
+		}
+		else {
+			stack = jumps.at(jumpCount-1).codePosition;
+			pushCommand("JUMP", stack);
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+		}
 		jumps.pop_back();
-	}
-	else {
-		stack = jumps.at(jumpCount-1).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
-	}
-	jumps.pop_back();
-	jumps.pop_back();
+		jumps.pop_back();
 
-	depth--;
-	assignFlag = true;
+		depth--;
+		assignFlag = true;
 	} else{
 		depth--;
 		weight /= 10; 
@@ -327,36 +331,36 @@ command: identifier ASSIGN {
 }
 | DO {
 	if(!preParsing) {
-	assignFlag = true;
-	depth++;
-	Jump j;
-	newJump(&j, code.size(), depth);
-	jumps.push_back(j);
+		assignFlag = true;
+		depth++;
+		Jump j;
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
 	} else {
 		depth++;
 		weight*=10; 
 	}
 } commands newlabel condition ENDDO {
 	if(!preParsing) {
-	long long int stack;
-	long long int jumpCount = jumps.size()-1;
-	if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
-		stack = jumps.at(jumpCount-2).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
-		addInt(jumps.at(jumpCount-1).codePosition, code.size());
+		long long int stack;
+		long long int jumpCount = jumps.size()-1;
+		if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
+			stack = jumps.at(jumpCount-2).codePosition;
+			pushCommand("JUMP", stack);
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addInt(jumps.at(jumpCount-1).codePosition, code.size());
+			jumps.pop_back();
+		}
+		else {
+			stack = jumps.at(jumpCount-1).codePosition;
+			pushCommand("JUMP", stack);
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+		}
 		jumps.pop_back();
-	}
-	else {
-		stack = jumps.at(jumpCount-1).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
-	}
-	jumps.pop_back();
-	jumps.pop_back();
+		jumps.pop_back();
 
-	depth--;
-	assignFlag = true;
+		depth--;
+		assignFlag = true;
 	} else {
 		depth--;
 		weight /=10; 
@@ -367,49 +371,49 @@ command: identifier ASSIGN {
 
 ifbody: ELSE {
 	if(!preParsing) {
-	Jump j;
-	newJump(&j, code.size(), depth);
-	jumps.push_back(j);
-	
-	pushCommand("JUMP");
-	long long int jumpCount = jumps.size()-2;
-	Jump jump = jumps.at(jumpCount);
-	addInt(jump.codePosition, code.size());
-	
-	jumpCount--;
-	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
-		addInt(jumps.at(jumpCount).codePosition, code.size());
-	}
-	
-	assignFlag = true;
+		Jump j;
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
+		
+		pushCommand("JUMP");
+		long long int jumpCount = jumps.size()-2;
+		Jump jump = jumps.at(jumpCount);
+		addInt(jump.codePosition, code.size());
+		
+		jumpCount--;
+		if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+		}
+		
+		assignFlag = true;
 	}
 } commands ENDIF {
 	if(!preParsing) {
-	addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
 
-	jumps.pop_back();
-	jumps.pop_back();
-	if(jumps.size() >= 1 && jumps.at(jumps.size()-1).depth == depth) {
 		jumps.pop_back();
-	}
-	depth--;
-	assignFlag = true;
+		jumps.pop_back();
+		if(jumps.size() >= 1 && jumps.at(jumps.size()-1).depth == depth) {
+			jumps.pop_back();
+		}
+		depth--;
+		assignFlag = true;
 	} else {
 		depth--;
 	}
 }
 | ENDIF {
 	if(!preParsing) {
-	long long int jumpCount = jumps.size()-1;
-	addInt(jumps.at(jumpCount).codePosition, code.size());
-	jumpCount--;
-	if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
+		long long int jumpCount = jumps.size()-1;
 		addInt(jumps.at(jumpCount).codePosition, code.size());
+		jumpCount--;
+		if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
+			addInt(jumps.at(jumpCount).codePosition, code.size());
+			jumps.pop_back();
+		}
 		jumps.pop_back();
-	}
-	jumps.pop_back();
-	depth--;
-	assignFlag = true;
+		depth--;
+		assignFlag = true;
 	} else {
 		depth--;
 	}
@@ -419,94 +423,99 @@ ifbody: ELSE {
 
 forbody: TO value DO {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == NUMBER) {
-		setRegister("B", a.name);
-		popVariable(a.name);
-	}
-	else if(a.type == IDENTIFIER) {
-		memToRegister(a.memory, "B");
-	}
-	else {
-		Variable index = variables.at(argumentsTabIndex[0]);
-		if(index.type == NUMBER) {
-			long long int tabElMem = a.memory + stoll(index.name) + 1;
-			memToRegister(tabElMem, "B");
-			popVariable(index.name);
+		if(a.type == NUMBER) {
+			setRegister("B", a.name);
+			popVariable(a.name);
+		}
+		else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
 		}
 		else {
-			arrayIndexToRegister(a, index, "B");
+			Variable index = variables.at(argumentsTabIndex[0]);
+			if(index.type == NUMBER) {
+				long long int tabElMem = a.memory + stoll(index.name) + 1;
+				memToRegister(tabElMem, "B");
+				popVariable(index.name);
+			}
+			else {
+				arrayIndexToRegister(a, index, "B");
+			}
 		}
-	}
-	registerToMem("B", assignTarget.memory);
-	variables.at(assignTarget.name).isInit = true;
+		registerToMem("B", assignTarget.memory);
+		variables.at(assignTarget.name).isInit = true;
 
-	if(a.type != ARRAY && b.type != ARRAY)
-		substract(b, a, 1, 1);
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-		arraySubstract(b, a, bI, aI, 1, 1);
-		argumentsTabIndex[0] = "-1";
-		argumentsTabIndex[1] = "-1";
-	}
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(b, a, 1, 1);
+		else {
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+			arraySubstract(b, a, bI, aI, 1, 1);
+			argumentsTabIndex[0] = "-1";
+			argumentsTabIndex[1] = "-1";
+		}
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
 
-	Variable s;
-	std::string name = "LOOP" + std::to_string(depth);
-	newVariable(&s, name, true, IDENTIFIER);
-	insertVariable(name, s);
+		Variable s;
+		std::string name = "LOOP" + std::to_string(depth);
+		newVariable(&s, name, true, IDENTIFIER);
+		insertVariable(name, s);
 
-	registerToMem("B",variables.at(name).memory);
-	forVariables.push_back(variables.at(assignTarget.name));
+		registerToMem("B",variables.at(name).memory);
+		forVariables.push_back(variables.at(assignTarget.name));
 
-	pushCommand("JZERO B");
-	Jump jj;
-	newJump(&jj, code.size(), depth);
-	jumps.push_back(jj);
+		pushCommand("JZERO B");
+		Jump jj;
+		newJump(&jj, code.size(), depth);
+		jumps.push_back(jj);
 
-	memToRegister(variables.at(name).memory, "B");
-	
-	addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
+		memToRegister(variables.at(name).memory, "B");
+		
+		addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
-	Jump j;
-	newJump(&j, code.size(), depth);
-	jumps.push_back(j);
-	pushCommand("JZERO B");
-	pushCommand("DEC B");
-	registerToMem("B", variables.at(name).memory);
-	assignFlag = true;
+		Jump j;
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
+		pushCommand("JZERO B");
+		pushCommand("DEC B");
+		registerToMem("B", variables.at(name).memory);//todo same here
+		assignFlag = true;
 	} else {
 		preParseVariableUsage("LOOP" + std::to_string(depth));
 	}
 } commands ENDFOR {
 	if(!preParsing) {
-	Variable iterator = forVariables.at(forVariables.size()-1);
-	memToRegister(iterator.memory, "B");
-	pushCommand("INC B");
-	registerToMem("B", iterator.memory);
+		Variable iterator = forVariables.at(forVariables.size()-1);
 
-	long long int jumpCount = jumps.size()-1;
-	long long int stack = jumps.at(jumpCount-1).codePosition;
-	pushCommand("JUMP", stack);
-	addInt(jumps.at(jumpCount).codePosition, code.size());
-	jumps.pop_back();
-	jumps.pop_back();
-	
-	std::string name = "LOOP" + std::to_string(depth);
-	
-	popVariable(name); 
-	popVariable(iterator.name);
-	forVariables.pop_back();
+		if(iterator.inRegister == "NULL") {
+			memToRegister(iterator.memory, "B");
+			pushCommand("INC B");
+			registerToMem("B", iterator.memory);
+		} else {
+			pushCommand("INC " + iterator.inRegister);
+		}
 
-	depth--;
-	assignFlag = true;
+		long long int jumpCount = jumps.size()-1;
+		long long int stack = jumps.at(jumpCount-1).codePosition;
+		pushCommand("JUMP", stack);
+		addInt(jumps.at(jumpCount).codePosition, code.size());
+		jumps.pop_back();
+		jumps.pop_back();
+		
+		std::string name = "LOOP" + std::to_string(depth);
+		
+		popVariable(name); 
+		popVariable(iterator.name);
+		forVariables.pop_back();
+
+		depth--;
+		assignFlag = true;
 	}else {
 		depth--;
 		weight/=10; 
@@ -514,93 +523,97 @@ forbody: TO value DO {
 }
 | DOWNTO value DO {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
 
-	if(a.type == NUMBER) {
-		setRegister("B", a.name);
-		popVariable(a.name);
-	}
-	else if(a.type == IDENTIFIER) {
-		memToRegister(a.memory, "B");
-	}
-	else {
-		Variable index = variables.at(argumentsTabIndex[0]);
-		if(index.type == NUMBER) {
-			long long int tabElMem = a.memory + stoll(index.name) + 1;
-			memToRegister(tabElMem, "B");
-			popVariable(index.name);
+		if(a.type == NUMBER) {
+			setRegister("B", a.name);
+			popVariable(a.name);
+		}
+		else if(a.type == IDENTIFIER) {
+			memToRegister(a.memory, "B");
 		}
 		else {
-			arrayIndexToRegister(a, index, "B");
+			Variable index = variables.at(argumentsTabIndex[0]);
+			if(index.type == NUMBER) {
+				long long int tabElMem = a.memory + stoll(index.name) + 1;
+				memToRegister(tabElMem, "B");
+				popVariable(index.name);
+			}
+			else {
+				arrayIndexToRegister(a, index, "B");
+			}
 		}
-	}
-	registerToMem("B", assignTarget.memory);
-	variables.at(assignTarget.name).isInit = true;
+		registerToMem("B", assignTarget.memory);
+		variables.at(assignTarget.name).isInit = true;
 
-	if(a.type != ARRAY && b.type != ARRAY)
-		substract(a, b, 1, 1);
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-		arraySubstract(a, b, aI, bI, 1, 1);
-		argumentsTabIndex[0] = "-1";
-		argumentsTabIndex[1] = "-1";
-	}
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(a, b, 1, 1);
+		else {
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+			arraySubstract(a, b, aI, bI, 1, 1);
+			argumentsTabIndex[0] = "-1";
+			argumentsTabIndex[1] = "-1";
+		}
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
 
-	Variable s;
-	std::string name = "LOOP" + std::to_string(depth);
-	newVariable(&s, name, true, IDENTIFIER);
-	insertVariable(name, s);
+		Variable s;
+		std::string name = "LOOP" + std::to_string(depth);
+		newVariable(&s, name, true, IDENTIFIER);
+		insertVariable(name, s);
 
-	registerToMem("B",variables.at(name).memory);
-	forVariables.push_back(variables.at(assignTarget.name));
+		registerToMem("B",variables.at(name).memory);
+		forVariables.push_back(variables.at(assignTarget.name));
 
-	pushCommand("JZERO B");
-	Jump jj;
-	newJump(&jj, code.size(), depth);
-	jumps.push_back(jj);
+		pushCommand("JZERO B");
+		Jump jj;
+		newJump(&jj, code.size(), depth);
+		jumps.push_back(jj);
 
-	memToRegister(variables.at(name).memory, "B");
-	
-	addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
+		memToRegister(variables.at(name).memory, "B");
+		
+		addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
-	Jump j;
-	newJump(&j, code.size(), depth);
-	jumps.push_back(j);
-	pushCommand("JZERO B");
-	pushCommand("DEC B");
-	registerToMem("B", variables.at(name).memory);
-	assignFlag = true;
+		Jump j;
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
+		pushCommand("JZERO B");//todo dla rejestrow zmiennych
+		pushCommand("DEC B");
+		registerToMem("B", variables.at(name).memory);
+		assignFlag = true;
 	} else {
 		preParseVariableUsage("LOOP" + std::to_string(depth));
 	}
 } commands ENDFOR {
 	if(!preParsing) {
-	Variable iterator = forVariables.at(forVariables.size()-1);
-	memToRegister(iterator.memory, "B");
-	pushCommand("DEC B");
-	registerToMem("B", iterator.memory);
+		Variable iterator = forVariables.at(forVariables.size()-1);
+		if(iterator.inRegister == "NULL") {
+			memToRegister(iterator.memory, "B");
+			pushCommand("DEC B");
+			registerToMem("B", iterator.memory);
+		} else {
+			pushCommand("DEC " + iterator.inRegister);
+		}
 
-	long long int jumpCount = jumps.size()-1;
-	long long int stack = jumps.at(jumpCount-1).codePosition;
-	pushCommand("JUMP", stack);
-	addInt(jumps.at(jumpCount).codePosition, code.size());
-	jumps.pop_back();
-	jumps.pop_back();
+		long long int jumpCount = jumps.size()-1;
+		long long int stack = jumps.at(jumpCount-1).codePosition;
+		pushCommand("JUMP", stack);
+		addInt(jumps.at(jumpCount).codePosition, code.size());
+		jumps.pop_back();
+		jumps.pop_back();
 
-	std::string name = "LOOP" + std::to_string(depth);
-	popVariable(name);
-	popVariable(iterator.name);
-	forVariables.pop_back();
+		std::string name = "LOOP" + std::to_string(depth);
+		popVariable(name);
+		popVariable(iterator.name);
+		forVariables.pop_back();
 
-	depth--;
-	assignFlag = true;
+		depth--;
+		assignFlag = true;
 	}else {
 		depth--;
 		weight/=10; 
@@ -610,622 +623,622 @@ forbody: TO value DO {
 
 expression: value {
 	if(!preParsing) {
-	Variable ide = variables.at(expressionArguments[0]);
-	if(ide.type == NUMBER) {
-		setRegister("B", ide.name);
-		popVariable(ide.name);
-	}
-	else if(ide.type == IDENTIFIER) {
-		memToRegister(ide.memory, "B");
-	}
-	else {
-		Variable index = variables.at(argumentsTabIndex[0]);
-		if(index.type == NUMBER) {
-			long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
-			memToRegister(tabElMem, "B");
-			popVariable(index.name);
+		Variable ide = variables.at(expressionArguments[0]);
+		if(ide.type == NUMBER) {
+			setRegister("B", ide.name);
+			popVariable(ide.name);
+		}
+		else if(ide.type == IDENTIFIER) {
+			memToRegister(ide.memory, "B");
 		}
 		else {
-			arrayIndexToRegister(ide, index,"B");
+			Variable index = variables.at(argumentsTabIndex[0]);
+			if(index.type == NUMBER) {
+				long long int tabElMem = ide.memory + stoll(index.name) + 1 - ide.beginTable;
+				memToRegister(tabElMem, "B");
+				popVariable(index.name);
+			}
+			else {
+				arrayIndexToRegister(ide, index,"B");
+			}
 		}
-	}
-	if (!writeFlag) {
-		expressionArguments[0] = "-1";
-		argumentsTabIndex[0] = "-1";
-	}
+		if (!writeFlag) {
+			expressionArguments[0] = "-1";
+			argumentsTabIndex[0] = "-1";
+		}
 	}
 }
 | value ADD value {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-	if(a.type != ARRAY && b.type != ARRAY)
-		addition(a, b);
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-		arrayAddition(a, b, aI, bI);
-		argumentsTabIndex[0] = "-1";
-		argumentsTabIndex[1] = "-1";
-	}
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	}
-}
-| value SUB value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-	if(a.type != ARRAY && b.type != ARRAY)
-		substract(a, b, 0, 1);
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-		arraySubstract(a, b, aI, bI, 0, 1);
-		argumentsTabIndex[0] = "-1";
-		argumentsTabIndex[1] = "-1";
-	}
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	}
-}
-| value MUL value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-	Variable aI, bI;
-	if(variables.count(argumentsTabIndex[0]) > 0)
-		aI = variables.at(argumentsTabIndex[0]);
-	if(variables.count(argumentsTabIndex[1]) > 0)
-		bI = variables.at(argumentsTabIndex[1]);
-
-	if(a.type == NUMBER && b.type == NUMBER) {
-		long long int val = stoll(a.name) * stoll(b.name);
-		setRegister("B", std::to_string(val));
-		popVariable(a.name);
-		popVariable(b.name);
-	}
-	else if(a.type == NUMBER && isPowerOfTwo(stoll(a.name)) > 0) {
-		
-		int times = isPowerOfTwo(stoll(a.name));                                                 
-		if(b.type == IDENTIFIER)
-			memToRegister(b.memory, "B");
-		else if(b.type == ARRAY && bI.type == NUMBER) {
-			long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
-			memToRegister(addr, "B");
-			popVariable(bI.name);
-		}
-		else {
-			arrayIndexToRegister(b, bI, "B");
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		for(int i=0; i<times; ++i) {
-			pushCommand("ADD B B");
-		}
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-
-		popVariable(a.name);
-	}
-	else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
-		
-		int times = isPowerOfTwo(stoll(b.name));
-
-		if(a.type == IDENTIFIER)
-			memToRegister(a.memory, "B");
-		else if(a.type == ARRAY && aI.type == NUMBER) {
-			long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
-			memToRegister(addr, "B");
-			popVariable(aI.name);
-		}
-		else {
-			arrayIndexToRegister(a, aI, "B");
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		for(int i=0; i<times; ++i) {
-			pushCommand("ADD B B");
-		}
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-
-		popVariable(b.name);
-	}
-	else {
-		if(a.type == NUMBER) {
-			setRegister("B", a.name);
-		} else if(a.type == IDENTIFIER) {
-			memToRegister(a.memory, "B");
-		} else if(a.type == ARRAY) {
-			if(aI.type == IDENTIFIER)
-				arrayIndexToRegister(a, aI, "B");
-			else {
-				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
-				memToRegister(addr, "B");
-				popVariable(aI.name);
-			}
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		if(b.type == NUMBER) {
-			setRegister("C", b.name);
-		} else if(b.type == IDENTIFIER) {
-			memToRegister(b.memory, "C");
-		} else if(b.type == ARRAY) {
-			if(bI.type == IDENTIFIER)
-				arrayIndexToRegister(b, bI, "C");
-			else {
-				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
-				memToRegister(addr, "C");
-				popVariable(bI.name);
-			}
-		}
-		
-		pushCommand("JZERO C ",code.size()+10);  
-		pushCommand("SUB D D");
-		pushCommand("JZERO B", code.size()+9); 
-		pushCommand("JODD B ", code.size()+2); 
-		pushCommand("JUMP", code.size()+2);
-		pushCommand("ADD D C");
-		pushCommand("HALF B");
-		pushCommand("ADD C C");
-		pushCommand("JUMP",code.size()-6);
-		pushCommand("JUMP",code.size()+2);
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-
-		pushCommand("SUB D D");
-		pushCommand("COPY B D");	
-	}
-
-	argumentsTabIndex[0] = "-1";
-	argumentsTabIndex[1] = "-1";
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	}
-}
-| value DIV value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-	Variable aI, bI;
-	if(variables.count(argumentsTabIndex[0]) > 0)
-		aI = variables.at(argumentsTabIndex[0]);
-	if(variables.count(argumentsTabIndex[1]) > 0)
-		bI = variables.at(argumentsTabIndex[1]);
-
-	if(b.type == NUMBER && stoll(b.name) == 0) {
-		setRegister("B", "0");
-	}
-	else if(a.type == NUMBER && stoll(a.name) == 0) {
-		setRegister("B", "0");
-	}
-	else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
-		
-		int times = isPowerOfTwo(stoll(b.name));
-		
-		if(a.type == NUMBER) {
-			setRegister("B", a.name);
-			popVariable(a.name);
-		} else if(a.type == IDENTIFIER) {
-			memToRegister(a.memory, "B");
-		} else if(a.type == ARRAY) {
-			if(aI.type == IDENTIFIER)
-				arrayIndexToRegister(a, aI, "B");
-			else {
-				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
-				memToRegister(addr, "B");
-				popVariable(aI.name);
-			}
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		for(int i=0; i<times; ++i) {
-			pushCommand("HALF B");
-		}
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-	}
-	else if(a.type == NUMBER && b.type == NUMBER) {
-		long long int val = stoll(a.name) / stoll(b.name);
-		setRegister("B", std::to_string(val));
-		popVariable(a.name);
-		popVariable(b.name);
-	} else {
-		if(a.type == NUMBER) {
-			setRegister("B", a.name);
-			popVariable(a.name);
-		} else if(a.type == IDENTIFIER) {
-			memToRegister(a.memory, "B");
-		} else if(a.type == ARRAY) {
-			if(aI.type == IDENTIFIER)
-				arrayIndexToRegister(a, aI, "B");
-			else {
-				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
-				memToRegister(addr, "B");
-				popVariable(aI.name);
-			}
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		if(b.type == NUMBER) {
-			setRegister("C", b.name);
-			popVariable(b.name);
-		} else if(b.type == IDENTIFIER) {
-			memToRegister(b.memory, "C");
-		} else if(b.type == ARRAY) {
-			if(bI.type == IDENTIFIER)
-				arrayIndexToRegister(b, bI, "C");
-			else {
-				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
-				memToRegister(addr, "C");
-				popVariable(bI.name);
-			}
-		}
-		
-		Jump juma;
-		newJump(&juma, code.size(), depth);
-		jumps.push_back(juma);
-		pushCommand("JZERO C");
-
-		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
-			registerToMem("E");
-		} 
-		
-		
-		
-
-		pushCommand("SUB E E"); 
-		pushCommand("COPY D C");
-		pushCommand("SUB D B");
-		pushCommand("JZERO D",code.size()+3); 
-		pushCommand("SUB B B");
-		pushCommand("JUMP", code.size()+35); 
-		
-		pushCommand("COPY D B");
-		pushCommand("SUB D C");
-		pushCommand("JZERO D",code.size()+2);
-		pushCommand("JUMP",code.size()+4); 
-		pushCommand("SUB B B");
-		pushCommand("INC B");
-		pushCommand("JUMP", code.size()+28); 
-
-		pushCommand("COPY D C");
-		pushCommand("COPY A D");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+2);
-		pushCommand("JUMP",code.size()+3);
-		pushCommand("ADD D D");
-		pushCommand("JUMP",code.size()-5);
-		pushCommand("COPY A C");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+2);
-		pushCommand("JUMP", code.size()+10);
-		pushCommand("COPY A D");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+4);
-		pushCommand("HALF D");
-		pushCommand("ADD E E"); 
-		pushCommand("JUMP",code.size()-5);
-		pushCommand("SUB B D");
-		pushCommand("INC E"); 
-		pushCommand("JUMP",code.size()-12);
-		pushCommand("COPY A D"); 
-		pushCommand("SUB A C"); 
-		pushCommand("JZERO A", code.size()+4); 
-		pushCommand("ADD E E"); 
-		pushCommand("HALF D");
-		pushCommand("JUMP", code.size()-5);
-		pushCommand("COPY B E");
-		pushCommand("JUMP", code.size()+2);
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-
-		pushCommand("SUB B B");
-
-		if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
-			memToRegister("E");
-		}
-	}
-
-	argumentsTabIndex[0] = "-1";
-	argumentsTabIndex[1] = "-1";
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	}
-}
-| value MOD value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-	Variable aI, bI;
-	if(variables.count(argumentsTabIndex[0]) > 0)
-		aI = variables.at(argumentsTabIndex[0]);
-	if(variables.count(argumentsTabIndex[1]) > 0)
-		bI = variables.at(argumentsTabIndex[1]);
-
-	if(b.type == NUMBER && stoll(b.name) == 0) {
-		setRegister("B", "0");
-	}
-	else if(a.type == NUMBER && stoll(a.name) == 0) {
-		setRegister("B", "0");
-	}
-	else if(a.type == NUMBER && b.type == NUMBER) {
-		long long int val = stoll(a.name) % stoll(b.name);
-		setRegister("B", std::to_string(val));
-		popVariable(a.name);
-		popVariable(b.name);
-	} else {
-		if(a.type == NUMBER) {
-			setRegister("B", a.name);
-			popVariable(a.name);
-		} else if(a.type == IDENTIFIER) {
-			memToRegister(a.memory, "B");
-		} else if(a.type == ARRAY) {
-			if(aI.type == IDENTIFIER)
-				arrayIndexToRegister(a, aI, "B");
-			else {
-				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
-				memToRegister(addr, "B");
-				popVariable(aI.name);
-			}
-		}
-		
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-
-		if(b.type == NUMBER) {
-			setRegister("C", b.name);
-			popVariable(b.name);
-		} else if(b.type == IDENTIFIER) {
-			memToRegister(b.memory, "C");
-		} else if(b.type == ARRAY) {
-			if(bI.type == IDENTIFIER)
-				arrayIndexToRegister(b, bI, "C");
-			else {
-				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
-				memToRegister(addr, "C");
-				popVariable(bI.name);
-			}
-		}
-		
-		Jump juma;
-		newJump(&juma, code.size(), depth);
-		jumps.push_back(juma);
-		pushCommand("JZERO C");
-
-		pushCommand("COPY D C");
-		pushCommand("SUB D B");
-		pushCommand("JZERO D",code.size()+2); 
-		pushCommand("JUMP", code.size()+25); 
-		
-		pushCommand("COPY D B");
-		pushCommand("SUB D C");
-		pushCommand("JZERO D",code.size()+2);
-		pushCommand("JUMP",code.size()+3); 
-		pushCommand("SUB B B");
-		pushCommand("JUMP", code.size()+19); 
-
-		pushCommand("COPY D C");
-		pushCommand("COPY A D");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+2);
-		pushCommand("JUMP",code.size()+3);
-		pushCommand("ADD D D");
-		pushCommand("JUMP",code.size()-5);
-		pushCommand("COPY A C");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+2);
-		pushCommand("JUMP", code.size()+8);
-		pushCommand("COPY A D");
-		pushCommand("SUB A B");
-		pushCommand("JZERO A",code.size()+3);
-		pushCommand("HALF D");
-		pushCommand("JUMP",code.size()-4);
-		pushCommand("SUB B D");
-		pushCommand("JUMP",code.size()-10);
-		pushCommand("JUMP", code.size()+2);
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
-		jumps.pop_back();
-
-		pushCommand("SUB B B");			
-	}
-
-
-	argumentsTabIndex[0] = "-1";
-	argumentsTabIndex[1] = "-1";
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	}
-}
-;
-
-condition: value EQ value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-
-	if(a.type == NUMBER && b.type == NUMBER) {
-		if(stoll(a.name) == stoll(b.name))
-			setRegister("B", "1");
-		else
-			setRegister("B", "0");
-		popVariable(a.name);
-		popVariable(b.name);
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-	}
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
 		if(a.type != ARRAY && b.type != ARRAY)
-			substract(b, a, 0, 0);
-		else
-			arraySubstract(b, a, bI, aI, 0, 0);
-
-		pushCommand("JZERO B", code.size()+2);
-		Jump j;
-		newJump(&j, code.size(), depth);
-		jumps.push_back(j);
-		pushCommand("JUMP");
-
-		if(a.type != ARRAY && b.type != ARRAY)
-			substract(a, b, 0, 1);
-		else
-			arraySubstract(a, b, aI, bI, 0, 1);
-
-		pushCommand("JZERO B", code.size()+2);
-		Jump jj;
-		newJump(&jj, code.size(), depth);
-		jumps.push_back(jj);
-		pushCommand("JUMP");
-	}
-
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	argumentsTabIndex[0] = "-1";
-	argumentsTabIndex[1] = "-1";
-	}
-}
-| value NEQ value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-
-	if(a.type == NUMBER && b.type == NUMBER) {
-		if(stoll(a.name) != stoll(b.name))
-			setRegister("B", "1");
-		else
-			setRegister("B", "0");
-		popVariable(a.name);
-		popVariable(b.name);
-		Jump jum;
-		newJump(&jum, code.size(), depth);
-		jumps.push_back(jum);
-		pushCommand("JZERO B");
-	}
-	else {
-		Variable aI, bI;
-		if(variables.count(argumentsTabIndex[0]) > 0)
-			aI = variables.at(argumentsTabIndex[0]);
-		if(variables.count(argumentsTabIndex[1]) > 0)
-			bI = variables.at(argumentsTabIndex[1]);
-
-		if(a.type != ARRAY && b.type != ARRAY)
-			substract(b, a, 0, 0);
-		else
-			arraySubstract(b, a, bI, aI, 0, 0);
-
-		pushCommand("JZERO B", code.size()+2);
-		Jump j;
-		newJump(&j, code.size(), depth);
-		jumps.push_back(j);
-		pushCommand("JUMP");
-
-		if(a.type != ARRAY && b.type != ARRAY)
-			substract(a, b, 0, 1);
-		else
-			arraySubstract(a, b, aI, bI, 0, 1);
-
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size()+1);
-		jumps.pop_back();
-		Jump jj;
-		newJump(&jj, code.size(), depth);
-		jumps.push_back(jj);
-		pushCommand("JZERO B");
-	}
-
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
-	argumentsTabIndex[0] = "-1";
-	argumentsTabIndex[1] = "-1";
-	}
-}
-| value LT value {
-	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
-	Variable b = variables.at(expressionArguments[1]);
-
-	if(a.type == NUMBER && b.type == NUMBER) {
-		if(stoll(a.name) < stoll(b.name))
-			setRegister("B","1");
-		else
-			setRegister("B","0");
-		popVariable(a.name);
-		popVariable(b.name);
-	}
-	else {
-		if(a.type != ARRAY && b.type != ARRAY)
-			substract(b, a, 0, 1);
+			addition(a, b);
 		else {
 			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
-			arraySubstract(b, a, bI, aI, 0, 1);
+			arrayAddition(a, b, aI, bI);
 			argumentsTabIndex[0] = "-1";
 			argumentsTabIndex[1] = "-1";
 		}
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
 	}
+}
+| value SUB value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+		if(a.type != ARRAY && b.type != ARRAY)
+			substract(a, b, 0, 1);
+		else {
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+			arraySubstract(a, b, aI, bI, 0, 1);
+			argumentsTabIndex[0] = "-1";
+			argumentsTabIndex[1] = "-1";
+		}
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+	}
+}
+| value MUL value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
 
-	Jump j;
-	newJump(&j, code.size(), depth);
-	jumps.push_back(j);
-	pushCommand("JZERO B");
+		if(a.type == NUMBER && b.type == NUMBER) {
+			long long int val = stoll(a.name) * stoll(b.name);
+			setRegister("B", std::to_string(val));
+			popVariable(a.name);
+			popVariable(b.name);
+		}
+		else if(a.type == NUMBER && isPowerOfTwo(stoll(a.name)) > 0) {
+			
+			int times = isPowerOfTwo(stoll(a.name));                                                 
+			if(b.type == IDENTIFIER)
+				memToRegister(b.memory, "B");
+			else if(b.type == ARRAY && bI.type == NUMBER) {
+				long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
+				memToRegister(addr, "B");
+				popVariable(bI.name);
+			}
+			else {
+				arrayIndexToRegister(b, bI, "B");
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
 
-	expressionArguments[0] = "-1";
-	expressionArguments[1] = "-1";
+			for(int i=0; i<times; ++i) {
+				pushCommand("ADD B B");
+			}
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+
+			popVariable(a.name);
+		}
+		else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
+			
+			int times = isPowerOfTwo(stoll(b.name));
+
+			if(a.type == IDENTIFIER)
+				memToRegister(a.memory, "B");
+			else if(a.type == ARRAY && aI.type == NUMBER) {
+				long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
+				memToRegister(addr, "B");
+				popVariable(aI.name);
+			}
+			else {
+				arrayIndexToRegister(a, aI, "B");
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+
+			for(int i=0; i<times; ++i) {
+				pushCommand("ADD B B");
+			}
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+
+			popVariable(b.name);
+		}
+		else {
+			if(a.type == NUMBER) {
+				setRegister("B", a.name);
+			} else if(a.type == IDENTIFIER) {
+				memToRegister(a.memory, "B");
+			} else if(a.type == ARRAY) {
+				if(aI.type == IDENTIFIER)
+					arrayIndexToRegister(a, aI, "B");
+				else {
+					long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
+					memToRegister(addr, "B");
+					popVariable(aI.name);
+				}
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+
+			if(b.type == NUMBER) {
+				setRegister("C", b.name);
+			} else if(b.type == IDENTIFIER) {
+				memToRegister(b.memory, "C");
+			} else if(b.type == ARRAY) {
+				if(bI.type == IDENTIFIER)
+					arrayIndexToRegister(b, bI, "C");
+				else {
+					long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
+					memToRegister(addr, "C");
+					popVariable(bI.name);
+				}
+			}
+			
+			pushCommand("JZERO C ",code.size()+10);  
+			pushCommand("SUB D D");
+			pushCommand("JZERO B", code.size()+9); 
+			pushCommand("JODD B ", code.size()+2); 
+			pushCommand("JUMP", code.size()+2);
+			pushCommand("ADD D C");
+			pushCommand("HALF B");
+			pushCommand("ADD C C");
+			pushCommand("JUMP",code.size()-6);
+			pushCommand("JUMP",code.size()+2);
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+
+			pushCommand("SUB D D");
+			pushCommand("COPY B D");	
+		}
+
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+	}
+}
+| value DIV value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+
+		if(b.type == NUMBER && stoll(b.name) == 0) {
+			setRegister("B", "0");
+		}
+		else if(a.type == NUMBER && stoll(a.name) == 0) {
+			setRegister("B", "0");
+		}
+		else if(b.type == NUMBER && isPowerOfTwo(stoll(b.name)) > 0) {
+			
+			int times = isPowerOfTwo(stoll(b.name));
+			
+			if(a.type == NUMBER) {
+				setRegister("B", a.name);
+				popVariable(a.name);
+			} else if(a.type == IDENTIFIER) {
+				memToRegister(a.memory, "B");
+			} else if(a.type == ARRAY) {
+				if(aI.type == IDENTIFIER)
+					arrayIndexToRegister(a, aI, "B");
+				else {
+					long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
+					memToRegister(addr, "B");
+					popVariable(aI.name);
+				}
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+
+			for(int i=0; i<times; ++i) {
+				pushCommand("HALF B");
+			}
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+		}
+		else if(a.type == NUMBER && b.type == NUMBER) {
+			long long int val = stoll(a.name) / stoll(b.name);
+			setRegister("B", std::to_string(val));
+			popVariable(a.name);
+			popVariable(b.name);
+		} else {
+			if(a.type == NUMBER) {
+				setRegister("B", a.name);
+				popVariable(a.name);
+			} else if(a.type == IDENTIFIER) {
+				memToRegister(a.memory, "B");
+			} else if(a.type == ARRAY) {
+				if(aI.type == IDENTIFIER)
+					arrayIndexToRegister(a, aI, "B");
+				else {
+					long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
+					memToRegister(addr, "B");
+					popVariable(aI.name);
+				}
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+
+			if(b.type == NUMBER) {
+				setRegister("C", b.name);
+				popVariable(b.name);
+			} else if(b.type == IDENTIFIER) {
+				memToRegister(b.memory, "C");
+			} else if(b.type == ARRAY) {
+				if(bI.type == IDENTIFIER)
+					arrayIndexToRegister(b, bI, "C");
+				else {
+					long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
+					memToRegister(addr, "C");
+					popVariable(bI.name);
+				}
+			}
+			
+			Jump juma;
+			newJump(&juma, code.size(), depth);
+			jumps.push_back(juma);
+			pushCommand("JZERO C");
+
+			if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
+				registerToMem("E");
+			} 
+			
+			
+			
+
+			pushCommand("SUB E E"); 
+			pushCommand("COPY D C");
+			pushCommand("SUB D B");
+			pushCommand("JZERO D",code.size()+3); 
+			pushCommand("SUB B B");
+			pushCommand("JUMP", code.size()+35); 
+			
+			pushCommand("COPY D B");
+			pushCommand("SUB D C");
+			pushCommand("JZERO D",code.size()+2);
+			pushCommand("JUMP",code.size()+4); 
+			pushCommand("SUB B B");
+			pushCommand("INC B");
+			pushCommand("JUMP", code.size()+28); 
+
+			pushCommand("COPY D C");
+			pushCommand("COPY A D");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+2);
+			pushCommand("JUMP",code.size()+3);
+			pushCommand("ADD D D");
+			pushCommand("JUMP",code.size()-5);
+			pushCommand("COPY A C");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+2);
+			pushCommand("JUMP", code.size()+10);
+			pushCommand("COPY A D");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+4);
+			pushCommand("HALF D");
+			pushCommand("ADD E E"); 
+			pushCommand("JUMP",code.size()-5);
+			pushCommand("SUB B D");
+			pushCommand("INC E"); 
+			pushCommand("JUMP",code.size()-12);
+			pushCommand("COPY A D"); 
+			pushCommand("SUB A C"); 
+			pushCommand("JZERO A", code.size()+4); 
+			pushCommand("ADD E E"); 
+			pushCommand("HALF D");
+			pushCommand("JUMP", code.size()-5);
+			pushCommand("COPY B E");
+			pushCommand("JUMP", code.size()+2);
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+
+			pushCommand("SUB B B");
+
+			if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
+				memToRegister("E");
+			}
+		}
+
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+	}
+}
+| value MOD value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
+		if(variables.count(argumentsTabIndex[0]) > 0)
+			aI = variables.at(argumentsTabIndex[0]);
+		if(variables.count(argumentsTabIndex[1]) > 0)
+			bI = variables.at(argumentsTabIndex[1]);
+
+		if(b.type == NUMBER && stoll(b.name) == 0) {
+			setRegister("B", "0");
+		}
+		else if(a.type == NUMBER && stoll(a.name) == 0) {
+			setRegister("B", "0");
+		}
+		else if(a.type == NUMBER && b.type == NUMBER) {
+			long long int val = stoll(a.name) % stoll(b.name);
+			setRegister("B", std::to_string(val));
+			popVariable(a.name);
+			popVariable(b.name);
+		} else {
+			if(a.type == NUMBER) {
+				setRegister("B", a.name);
+				popVariable(a.name);
+			} else if(a.type == IDENTIFIER) {
+				memToRegister(a.memory, "B");
+			} else if(a.type == ARRAY) {
+				if(aI.type == IDENTIFIER)
+					arrayIndexToRegister(a, aI, "B");
+				else {
+					long long int addr = a.memory + stoll(aI.name) + 1 - a.beginTable;
+					memToRegister(addr, "B");
+					popVariable(aI.name);
+				}
+			}
+			
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+
+			if(b.type == NUMBER) {
+				setRegister("C", b.name);
+				popVariable(b.name);
+			} else if(b.type == IDENTIFIER) {
+				memToRegister(b.memory, "C");
+			} else if(b.type == ARRAY) {
+				if(bI.type == IDENTIFIER)
+					arrayIndexToRegister(b, bI, "C");
+				else {
+					long long int addr = b.memory + stoll(bI.name) + 1 - b.beginTable;
+					memToRegister(addr, "C");
+					popVariable(bI.name);
+				}
+			}
+			
+			Jump juma;
+			newJump(&juma, code.size(), depth);
+			jumps.push_back(juma);
+			pushCommand("JZERO C");
+
+			pushCommand("COPY D C");
+			pushCommand("SUB D B");
+			pushCommand("JZERO D",code.size()+2); 
+			pushCommand("JUMP", code.size()+25); 
+			
+			pushCommand("COPY D B");
+			pushCommand("SUB D C");
+			pushCommand("JZERO D",code.size()+2);
+			pushCommand("JUMP",code.size()+3); 
+			pushCommand("SUB B B");
+			pushCommand("JUMP", code.size()+19); 
+
+			pushCommand("COPY D C");
+			pushCommand("COPY A D");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+2);
+			pushCommand("JUMP",code.size()+3);
+			pushCommand("ADD D D");
+			pushCommand("JUMP",code.size()-5);
+			pushCommand("COPY A C");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+2);
+			pushCommand("JUMP", code.size()+8);
+			pushCommand("COPY A D");
+			pushCommand("SUB A B");
+			pushCommand("JZERO A",code.size()+3);
+			pushCommand("HALF D");
+			pushCommand("JUMP",code.size()-4);
+			pushCommand("SUB B D");
+			pushCommand("JUMP",code.size()-10);
+			pushCommand("JUMP", code.size()+2);
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			jumps.pop_back();
+
+			pushCommand("SUB B B");			
+		}
+
+
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+	}
+}
+;
+
+condition: value EQ value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+
+		if(a.type == NUMBER && b.type == NUMBER) {
+			if(stoll(a.name) == stoll(b.name))
+				setRegister("B", "1");
+			else
+				setRegister("B", "0");
+			popVariable(a.name);
+			popVariable(b.name);
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+		}
+		else {
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+
+			if(a.type != ARRAY && b.type != ARRAY)
+				substract(b, a, 0, 0);
+			else
+				arraySubstract(b, a, bI, aI, 0, 0);
+
+			pushCommand("JZERO B", code.size()+2);
+			Jump j;
+			newJump(&j, code.size(), depth);
+			jumps.push_back(j);
+			pushCommand("JUMP");
+
+			if(a.type != ARRAY && b.type != ARRAY)
+				substract(a, b, 0, 1);
+			else
+				arraySubstract(a, b, aI, bI, 0, 1);
+
+			pushCommand("JZERO B", code.size()+2);
+			Jump jj;
+			newJump(&jj, code.size(), depth);
+			jumps.push_back(jj);
+			pushCommand("JUMP");
+		}
+
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+	}
+}
+| value NEQ value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+
+		if(a.type == NUMBER && b.type == NUMBER) {
+			if(stoll(a.name) != stoll(b.name))
+				setRegister("B", "1");
+			else
+				setRegister("B", "0");
+			popVariable(a.name);
+			popVariable(b.name);
+			Jump jum;
+			newJump(&jum, code.size(), depth);
+			jumps.push_back(jum);
+			pushCommand("JZERO B");
+		}
+		else {
+			Variable aI, bI;
+			if(variables.count(argumentsTabIndex[0]) > 0)
+				aI = variables.at(argumentsTabIndex[0]);
+			if(variables.count(argumentsTabIndex[1]) > 0)
+				bI = variables.at(argumentsTabIndex[1]);
+
+			if(a.type != ARRAY && b.type != ARRAY)
+				substract(b, a, 0, 0);
+			else
+				arraySubstract(b, a, bI, aI, 0, 0);
+
+			pushCommand("JZERO B", code.size()+2);
+			Jump j;
+			newJump(&j, code.size(), depth);
+			jumps.push_back(j);
+			pushCommand("JUMP");
+
+			if(a.type != ARRAY && b.type != ARRAY)
+				substract(a, b, 0, 1);
+			else
+				arraySubstract(a, b, aI, bI, 0, 1);
+
+			addInt(jumps.at(jumps.size()-1).codePosition, code.size()+1);
+			jumps.pop_back();
+			Jump jj;
+			newJump(&jj, code.size(), depth);
+			jumps.push_back(jj);
+			pushCommand("JZERO B");
+		}
+
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
+		argumentsTabIndex[0] = "-1";
+		argumentsTabIndex[1] = "-1";
+	}
+}
+| value LT value {
+	if(!preParsing) {
+		Variable a = variables.at(expressionArguments[0]);
+		Variable b = variables.at(expressionArguments[1]);
+
+		if(a.type == NUMBER && b.type == NUMBER) {
+			if(stoll(a.name) < stoll(b.name))
+				setRegister("B","1");
+			else
+				setRegister("B","0");
+			popVariable(a.name);
+			popVariable(b.name);
+		}
+		else {
+			if(a.type != ARRAY && b.type != ARRAY)
+				substract(b, a, 0, 1);
+			else {
+				Variable aI, bI;
+				if(variables.count(argumentsTabIndex[0]) > 0)
+					aI = variables.at(argumentsTabIndex[0]);
+				if(variables.count(argumentsTabIndex[1]) > 0)
+					bI = variables.at(argumentsTabIndex[1]);
+				arraySubstract(b, a, bI, aI, 0, 1);
+				argumentsTabIndex[0] = "-1";
+				argumentsTabIndex[1] = "-1";
+			}
+		}
+
+		Jump j;
+		newJump(&j, code.size(), depth);
+		jumps.push_back(j);
+		pushCommand("JZERO B");
+
+		expressionArguments[0] = "-1";
+		expressionArguments[1] = "-1";
 	}
 }
 | value GT value {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
+		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
         if(a.type == NUMBER && b.type == NUMBER) {
@@ -1262,7 +1275,7 @@ condition: value EQ value {
 }
 | value LE value {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
+		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
         if(a.type == NUMBER && b.type == NUMBER) {
@@ -1299,7 +1312,7 @@ condition: value EQ value {
 }
 | value GE value {
 	if(!preParsing) {
-	Variable a = variables.at(expressionArguments[0]);
+		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
 
         if(a.type == NUMBER && b.type == NUMBER) {
@@ -1340,19 +1353,19 @@ condition: value EQ value {
 
 value: NUM {
 	if(!preParsing) {
-	if(assignFlag){
-		std::cout << "Error [linia " << yylineno << "]: Próba przypisania do stałej." << std::endl;
-		exit(1);
-	}
-	Variable s;
-	newVariable(&s, $1, false, NUMBER);
-	insertVariable($1, s);
-	if (expressionArguments[0] == "-1"){
-		expressionArguments[0] = $1;
-	}
-	else {
-		expressionArguments[1] = $1;
-	}
+		if(assignFlag){
+			std::cout << "Error [linia " << yylineno << "]: Próba przypisania do stałej." << std::endl;
+			exit(1);
+		}
+		Variable s;
+		newVariable(&s, $1, false, NUMBER);
+		insertVariable($1, s);
+		if (expressionArguments[0] == "-1"){
+			expressionArguments[0] = $1;
+		}
+		else {
+			expressionArguments[1] = $1;
+		}
 	}
 }
 | identifier
@@ -1360,76 +1373,76 @@ value: NUM {
 
 identifier: IDENT {
 	if(!preParsing) {
-	if(variables.find($1) == variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
-		exit(1);
-	} 
-	if(!variables.at($1).isTable) {
-		if(!assignFlag) {
-			if(!variables.at($1).isInit) {
-				std::cout << "Error [linia " << yylineno << "]: Użyta niezainicjowana zmienna " << $<str>1 << std::endl;
-				exit(1);
-			}
-			if (expressionArguments[0] == "-1"){
-				expressionArguments[0] = $1;
-			}
-			else{
-				expressionArguments[1] = $1;
+		if(variables.find($1) == variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
+			exit(1);
+		} 
+		if(!variables.at($1).isTable) {
+			if(!assignFlag) {
+				if(!variables.at($1).isInit) {
+					std::cout << "Error [linia " << yylineno << "]: Użyta niezainicjowana zmienna " << $<str>1 << std::endl;
+					exit(1);
+				}
+				if (expressionArguments[0] == "-1"){
+					expressionArguments[0] = $1;
+				}
+				else{
+					expressionArguments[1] = $1;
+				}
+			} else {
+				assignTarget = variables.at($1);
 			}
 		} else {
-			assignTarget = variables.at($1);
+			std::cout << "Error [linia " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
+			exit(1);
 		}
-	} else {
-		std::cout << "Error [linia " << yylineno << "]: Przypisanie wartości do całej tablicy " << $<str>1 << std::endl;
-		exit(1);
-	}
 	} else {
 		preParseVariableUsage($1);
 	}
 }
 | IDENT LB IDENT RB {
 	if(!preParsing) {
-	if(variables.find($1) == variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
-		exit(1);
-	} 
-	if(variables.find($3) == variables.end()) {
-		std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>3 << std::endl;
-		exit(1);
-	} 
+		if(variables.find($1) == variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>1 << std::endl;
+			exit(1);
+		} 
+		if(variables.find($3) == variables.end()) {
+			std::cout << "Error [linia " << yylineno << "]: Niezadeklarowana zmienna " << $<str>3 << std::endl;
+			exit(1);
+		} 
 
-	if(!variables.at($1).isTable) {
-		std::cout << "Error [linia " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
-		exit(1);
-	} else {
-		if(variables.at($3).isTable) {
-			std::cout << "Error [linia " << yylineno << "]: Indeks tablicy nie może być zmienną tablicową!" << std::endl;
+		if(!variables.at($1).isTable) {
+			std::cout << "Error [linia " << yylineno << "]: Zmienna " << $<str>1 << " nie jest tablicą!" << std::endl;
 			exit(1);
-		}
-		if(!variables.at($3).isInit) {
-			std::cout << "Error [linia " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
-			exit(1);
-		}
-		
-		if(false) { 
-			std::cout << "Error [linia " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
-			exit(1);
-		}
-
-		if(!assignFlag) {
-			if (expressionArguments[0] == "-1"){
-				expressionArguments[0] = $1;
-				argumentsTabIndex[0] = $3;
-			}
-			else {
-				expressionArguments[1] = $1;
-				argumentsTabIndex[1] = $3;
-			}
 		} else {
-			assignTarget = variables.at($1);
-			tabAssignTargetIndex = $3;
+			if(variables.at($3).isTable) {
+				std::cout << "Error [linia " << yylineno << "]: Indeks tablicy nie może być zmienną tablicową!" << std::endl;
+				exit(1);
+			}
+			if(!variables.at($3).isInit) {
+				std::cout << "Error [linia " << yylineno << "]: Użyta zmienna " << $<str>3 << " nie jest zainicjowana!" << std::endl;
+				exit(1);
+			}
+			
+			if(false) { 
+				std::cout << "Error [linia " << yylineno << "]: Odwołanie do złego indeksu tablicy " << $<str>1 << "!" << std::endl;
+				exit(1);
+			}
+
+			if(!assignFlag) {
+				if (expressionArguments[0] == "-1"){
+					expressionArguments[0] = $1;
+					argumentsTabIndex[0] = $3;
+				}
+				else {
+					expressionArguments[1] = $1;
+					argumentsTabIndex[1] = $3;
+				}
+			} else {
+				assignTarget = variables.at($1);
+				tabAssignTargetIndex = $3;
+			}
 		}
-	}
 	} else {
 		preParseVariableUsage($3);
 	}
