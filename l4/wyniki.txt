@@ -13,31 +13,7 @@ Uruchamianie programu.
 > 0
 > 0
 > 0
-Skończono program (koszt: 730).
-tests.sh: line 5: [: missing `]'
-tests.sh: line 5: 0-div-mod.imp: command not found
-^C
-jg@jg:~/Desktop/pwr/jftt/l4$ make
-yacc -d opt4.y
-lex 4.l
-g++ -std=c++11 -g lex.yy.c y.tab.c -o 4
-rm y.tab.c y.tab.h lex.yy.c
-jg@jg:~/Desktop/pwr/jftt/l4$ bash tests.sh
-./4 ./officialtests/0-div-mod.imp ./maszyna/plik.txt
-Add: a name: a type: 1 memory:0 reg:E
-Add: b name: b type: 1 memory:1 reg:F
-Add: c name: c type: 1 memory:2 reg:G
-./maszyna/maszyna-rejestrowa ./maszyna/plik.txt
-Czytanie kodu.
-Skończono czytanie kodu (liczba rozkazów: 177).
-Uruchamianie programu.
-? 1
-? 0
-> 1
-> 0
-> 0
-> 0
-Skończono program (koszt: 730).
+Skończono program (koszt: 730).772
 
 ./4 ./officialtests/1-numbers.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -65,7 +41,7 @@ Uruchamianie programu.
 > 11
 > 707
 > 7777
-Skończono program (koszt: 5655).
+Skończono program (koszt: 5655).5646
 
 ./4 ./officialtests/2-fib.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:246913571 reg:E
@@ -105,7 +81,7 @@ Skończono czytanie kodu (liczba rozkazów: 265).
 Uruchamianie programu.
 ? 20
 > 2432902008176640000
-Skończono program (koszt: 25820).
+Skończono program (koszt: 25820).17593
 
 ./4 ./officialtests/5-tab.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
@@ -161,7 +137,7 @@ Uruchamianie programu.
 ? 1234567890987654321
 ? 987654321
 > 674106858
-Skończono program (koszt: 250392).
+Skończono program (koszt: 250392).230301
 
 ./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -178,7 +154,7 @@ Uruchamianie programu.
 > 31000
 > 40900
 > 2222010
-Skończono program (koszt: 861797).
+Skończono program (koszt: 861797).188621
 ./4 ./officialtests/7-loopiii.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
 Add: b name: b type: 1 memory:1 reg:F
@@ -194,7 +170,7 @@ Uruchamianie programu.
 > 31001
 > 40900
 > 2222012
-Skończono program (koszt: 861797).
+Skończono program (koszt: 861797).188621
 
 ./4 ./officialtests/8-for.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -211,7 +187,7 @@ Uruchamianie programu.
 > 507
 > 4379
 > 0
-Skończono program (koszt: 159042).
+Skończono program (koszt: 159042).152314
 
 ./4 ./officialtests/9-sort.imp ./maszyna/plik.txt
 Add: x name: x type: 1 memory:23 reg:E
@@ -267,7 +243,7 @@ Uruchamianie programu.
 > 20
 > 21
 > 22
-Skończono program (koszt: 125608).
+Skończono program (koszt: 125608).96406
 
 ./4 ./officialtests/program0.imp ./maszyna/plik.txt
 Add: a name: a type: 1 memory:0 reg:E
@@ -352,7 +328,7 @@ Uruchamianie programu.
 > 1
 > 14405693
 > 1
-Skończono program (koszt: 5029277).
+Skończono program (koszt: 5029277).4258943
 ./4 ./officialtests/program2.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:0 reg:E
 Add: m name: m type: 1 memory:1 reg:F
@@ -367,6 +343,6 @@ Uruchamianie programu.
 > 1
 > 4115226301
 > 1
-Skończono program (koszt: 93347660).
+Skończono program (koszt: 93347660).80325261
 
 jg@jg:~/Desktop/pwr/jftt/l4$

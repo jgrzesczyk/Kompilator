@@ -459,7 +459,7 @@ forbody: TO value DO {
 	expressionArguments[1] = "-1";
 
 	Variable s;
-	std::string name = "C" + std::to_string(depth);
+	std::string name = "LOOP" + std::to_string(depth);
 	newVariable(&s, name, true, IDENTIFIER);
 	insertVariable(name, s);
 
@@ -483,7 +483,7 @@ forbody: TO value DO {
 	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
 	} else {
-		preParseVariableUsage("C" + std::to_string(depth));
+		preParseVariableUsage("LOOP" + std::to_string(depth));
 	}
 } commands ENDFOR {
 	if(!preParsing) {
@@ -499,7 +499,7 @@ forbody: TO value DO {
 	jumps.pop_back();
 	jumps.pop_back();
 	
-	std::string name = "C" + std::to_string(depth);
+	std::string name = "LOOP" + std::to_string(depth);
 	
 	popVariable(name); 
 	popVariable(iterator.name);
@@ -554,7 +554,7 @@ forbody: TO value DO {
 	expressionArguments[1] = "-1";
 
 	Variable s;
-	std::string name = "C" + std::to_string(depth);
+	std::string name = "LOOP" + std::to_string(depth);
 	newVariable(&s, name, true, IDENTIFIER);
 	insertVariable(name, s);
 
@@ -578,7 +578,7 @@ forbody: TO value DO {
 	registerToMem("B", variables.at(name).memory);
 	assignFlag = true;
 	} else {
-		preParseVariableUsage("C" + std::to_string(depth));
+		preParseVariableUsage("LOOP" + std::to_string(depth));
 	}
 } commands ENDFOR {
 	if(!preParsing) {
@@ -594,7 +594,7 @@ forbody: TO value DO {
 	jumps.pop_back();
 	jumps.pop_back();
 
-	std::string name = "C" + std::to_string(depth);
+	std::string name = "LOOP" + std::to_string(depth);
 	popVariable(name);
 	popVariable(iterator.name);
 	forVariables.pop_back();
@@ -2040,7 +2040,7 @@ void insertVariable(std::string key, Variable i) {
     else {
         variables.at(key).numberAmount = variables.at(key).numberAmount+1;
     }
-	if(i.inRegister == "NULLL")//debug
+	if(i.inRegister == "NNULL")//debug
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memoryIndex-1 << " reg:" << i.inRegister << std::endl;
 }
 
