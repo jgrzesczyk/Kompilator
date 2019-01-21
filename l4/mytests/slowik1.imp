@@ -1,0 +1,36 @@
+DECLARE
+    a; b; c; d;
+    n; m; reszta; potega; dzielnik;
+IN
+    a := 922337203685477580;
+    b := 922337203685477580;
+    c := 922337203685477580;
+    d := 922337203685477580;
+    n := a;
+    n := n * b;
+    n := n * c;
+    n := n * d;
+
+    dzielnik := 2;
+    m := dzielnik * dzielnik;
+    WHILE n >= m DO
+        potega := 0;
+        reszta := n % dzielnik;
+        WHILE reszta = 0 DO
+            n := n / dzielnik;
+            potega := potega + 1;
+            reszta := n % dzielnik;
+        ENDWHILE
+        IF potega > 0 THEN [ czy znaleziono dzielnik ]
+            WRITE dzielnik;
+            WRITE potega;
+        ELSE
+            dzielnik := dzielnik + 1;
+            m := dzielnik * dzielnik;
+        ENDIF
+    ENDWHILE
+    IF n != 1 THEN [ ostatni dzielnik ]
+        WRITE n;
+        WRITE 1;
+    ENDIF
+END

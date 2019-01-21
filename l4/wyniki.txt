@@ -68,7 +68,7 @@ Uruchamianie programu.
 ? 20
 > 2432902008176640000
 > 17711
-Skończono program (koszt: 27774).27569
+Skończono program (koszt: 27774).27769
 
 ./4 ./officialtests/4-factorial.imp ./maszyna/plik.txt
 Add: n name: n type: 1 memory:102 reg:E
