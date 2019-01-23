@@ -2133,7 +2133,7 @@ void sortVariableUsage() {
 		}
 	}
 	for(int i=0; i<preParsingVars.size(); ++i) {
-		std::cout << preParsingVars[i] << ": " << preParsingCount[i] << " użyć" << "\n"; //debug
+		//std::cout << preParsingVars[i] << ": " << preParsingCount[i] << " użyć" << "\n"; //debug
 	}
 }
 
