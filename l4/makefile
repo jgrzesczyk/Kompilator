@@ -5,8 +5,8 @@
 lex.yy.c: y.tab.c 4.l
 	lex 4.l
 
-y.tab.c: opt4.y
-	yacc -d opt4.y
+y.tab.c: opt4temp.y
+	yacc -d opt4temp.y
 
 clean: 
 	rm -rf lex.yy.c y.tab.c y.tab.h 4

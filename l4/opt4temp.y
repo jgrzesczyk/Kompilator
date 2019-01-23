@@ -47,23 +47,21 @@ int yyerror (const std::string);
 extern int yylineno;
 extern FILE * yyin;
 int yylex();
-void addInt(long long int, long long int);
-void newJump(Jump *j, long long int, long long int);
-void addition(Variable a, Variable b);
-void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex);
-void substract(Variable, Variable, int, int);
-void arraySubstract(Variable, Variable, Variable, Variable, int, int);
-void arrayIndexToRegister(Variable tab, Variable index, std::string reg);
+void addJumpPlaceToCode(long long int, long long int);
+void newJump(Jump*, long long int, long long int);
+void addition(Variable, Variable, Variable, Variable);
+void substract(Variable, Variable, Variable, Variable, int, int);
+void arrayIndexToRegister(Variable, Variable, std::string);
 void setRegister(std::string, std::string);
-void newVariable(Variable* id, std::string name, bool isLocal, Type type);
-void newVariable(Variable* id, std::string name, bool isLocal, Type type, long long int begin, long long int end);
-void popVariable(std::string key);
+void newVariable(Variable*, std::string, bool, Type);
+void newVariable(Variable*, std::string, bool, Type, long long int, long long int);
+void popVariable(std::string);
 void insertVariable(std::string, Variable);
-void pushCommand(std::string);
-void pushCommand(std::string, long long int);
+void addCode(std::string);
+void addCode(std::string, long long int);
 void memToRegister(long long int, std::string);
 void memToRegister(std::string);
-std::string decToBin(long long int);
+std::string toBinary(long long int);
 void registerToMem(std::string, long long int);
 void registerToMem(std::string);
 int isPowerOfTwo(long long int);
@@ -90,7 +88,7 @@ void preParseVariableUsage(std::string);
 
 program: DECLARE declarations IN commands END {
 	if(!preParsing)
-		pushCommand("HALT");
+		addCode("HALT");
 }
 ;
 
@@ -162,13 +160,13 @@ command: identifier ASSIGN {
 					memToRegister(index.memory, "C");
 					
 				} else {
-					pushCommand("COPY C " + index.inRegister);
+					addCode("COPY C " + index.inRegister);
 				}
 				setRegister("A", std::to_string(offset));
-				pushCommand("ADD A C");
+				addCode("ADD A C");
 				setRegister("C", std::to_string(assignTarget.beginTable));
-				pushCommand("SUB A C");
-				pushCommand("STORE B");
+				addCode("SUB A C");
+				addCode("STORE B");
 			}
 		}
 		else if(!assignTarget.isLocal) {
@@ -223,7 +221,7 @@ command: identifier ASSIGN {
 		if(assignTarget.type == ARRAY) {
 			Variable index = variables.at(tabAssignTargetIndex);
 			if(index.type == NUMBER) {
-				pushCommand("GET B");
+				addCode("GET B");
 				long long int tabElMem = assignTarget.memory + stoll(index.name) + 1 - assignTarget.beginTable;
 				registerToMem("B", tabElMem);
 				popVariable(index.name);
@@ -234,22 +232,22 @@ command: identifier ASSIGN {
 					memToRegister(index.memory, "C");
 					
 				} else {
-					pushCommand("COPY C " + index.inRegister);
+					addCode("COPY C " + index.inRegister);
 				}
 				setRegister("A", std::to_string(offset));
-				pushCommand("ADD A C");
+				addCode("ADD A C");
 				setRegister("C", std::to_string(assignTarget.beginTable));
-				pushCommand("SUB A C");
-				pushCommand("GET B");
-				pushCommand("STORE B");
+				addCode("SUB A C");
+				addCode("GET B");
+				addCode("STORE B");
 			}
 
 		} else if(!assignTarget.isLocal) {
 			if(assignTarget.inRegister == "NULL") {
-				pushCommand("GET B"); 
+				addCode("GET B"); 
 				registerToMem("B", assignTarget.memory);
 			} else {
-				pushCommand("GET " + assignTarget.inRegister);
+				addCode("GET " + assignTarget.inRegister);
 			}
 		} else {
 			std::cout << "Error [linia " << yylineno << "]: Próba modyfikacji iteratora pętli." << std::endl;
@@ -283,7 +281,7 @@ command: identifier ASSIGN {
 				arrayIndexToRegister(ide, index, "B");
 			}
 		}
-		pushCommand("PUT B"); 
+		addCode("PUT B"); 
 		assignFlag = true;
 		writeFlag = false;
 		expressionArguments[0] = "NULL";
@@ -308,15 +306,15 @@ command: identifier ASSIGN {
 		long long int jumpCount = jumps.size()-1;
 		if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
 			stack = jumps.at(jumpCount-2).codePosition;
-			pushCommand("JUMP", stack);
-			addInt(jumps.at(jumpCount).codePosition, code.size());
-			addInt(jumps.at(jumpCount-1).codePosition, code.size());
+			addCode("JUMP", stack);
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumpCount-1).codePosition, code.size());
 			jumps.pop_back();
 		}
 		else {
 			stack = jumps.at(jumpCount-1).codePosition;
-			pushCommand("JUMP", stack);
-			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addCode("JUMP", stack);
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		}
 		jumps.pop_back();
 		jumps.pop_back();
@@ -345,15 +343,15 @@ command: identifier ASSIGN {
 		long long int jumpCount = jumps.size()-1;
 		if(jumpCount > 2 && jumps.at(jumpCount-2).depth == depth) {
 			stack = jumps.at(jumpCount-2).codePosition;
-			pushCommand("JUMP", stack);
-			addInt(jumps.at(jumpCount).codePosition, code.size());
-			addInt(jumps.at(jumpCount-1).codePosition, code.size());
+			addCode("JUMP", stack);
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumpCount-1).codePosition, code.size());
 			jumps.pop_back();
 		}
 		else {
 			stack = jumps.at(jumpCount-1).codePosition;
-			pushCommand("JUMP", stack);
-			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addCode("JUMP", stack);
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		}
 		jumps.pop_back();
 		jumps.pop_back();
@@ -367,28 +365,27 @@ command: identifier ASSIGN {
 } 
 ;
 
-
 ifbody: ELSE {
 	if(!preParsing) {
 		Jump j;
 		newJump(&j, code.size(), depth);
 		jumps.push_back(j);
 		
-		pushCommand("JUMP");
+		addCode("JUMP");
 		long long int jumpCount = jumps.size()-2;
 		Jump jump = jumps.at(jumpCount);
-		addInt(jump.codePosition, code.size());
+		addJumpPlaceToCode(jump.codePosition, code.size());
 		
 		jumpCount--;
 		if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
-			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		}
 		
 		assignFlag = true;
 	}
 } commands ENDIF {
 	if(!preParsing) {
-		addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+		addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 
 		jumps.pop_back();
 		jumps.pop_back();
@@ -404,10 +401,10 @@ ifbody: ELSE {
 | ENDIF {
 	if(!preParsing) {
 		long long int jumpCount = jumps.size()-1;
-		addInt(jumps.at(jumpCount).codePosition, code.size());
+		addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		jumpCount--;
 		if(jumpCount >= 0 && jumps.at(jumpCount).depth == depth) {
-			addInt(jumps.at(jumpCount).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 			jumps.pop_back();
 		}
 		jumps.pop_back();
@@ -424,6 +421,7 @@ forbody: TO value DO {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
 		if(a.type == NUMBER) {
 			setRegister("B", a.name);
@@ -447,14 +445,13 @@ forbody: TO value DO {
 		variables.at(assignTarget.name).isInit = true;
 
 		if(a.type != ARRAY && b.type != ARRAY)
-			substract(b, a, 1, 1);
+			substract(b, a, bI, aI, 1, 1);
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
-			arraySubstract(b, a, bI, aI, 1, 1);
+			substract(b, a, bI, aI, 1, 1);
 			argumentsTabIndex[0] = "NULL";
 			argumentsTabIndex[1] = "NULL";
 		}
@@ -469,20 +466,20 @@ forbody: TO value DO {
 		registerToMem("B",variables.at(name).memory);
 		forVariables.push_back(variables.at(assignTarget.name));
 
-		pushCommand("JZERO B");
+		addCode("JZERO B");
 		Jump jj;
 		newJump(&jj, code.size(), depth);
 		jumps.push_back(jj);
 
 		memToRegister(variables.at(name).memory, "B");
 		
-		addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
+		addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
 		Jump j;
 		newJump(&j, code.size(), depth);
 		jumps.push_back(j);
-		pushCommand("JZERO B");
-		pushCommand("DEC B");
+		addCode("JZERO B");
+		addCode("DEC B");
 		registerToMem("B", variables.at(name).memory);//todo same here
 		assignFlag = true;
 	} else {
@@ -494,16 +491,16 @@ forbody: TO value DO {
 
 		if(iterator.inRegister == "NULL") {
 			memToRegister(iterator.memory, "B");
-			pushCommand("INC B");
+			addCode("INC B");
 			registerToMem("B", iterator.memory);
 		} else {
-			pushCommand("INC " + iterator.inRegister);
+			addCode("INC " + iterator.inRegister);
 		}
 
 		long long int jumpCount = jumps.size()-1;
 		long long int stack = jumps.at(jumpCount-1).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
+		addCode("JUMP", stack);
+		addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		jumps.pop_back();
 		jumps.pop_back();
 		
@@ -524,6 +521,7 @@ forbody: TO value DO {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
 		if(a.type == NUMBER) {
 			setRegister("B", a.name);
@@ -547,14 +545,13 @@ forbody: TO value DO {
 		variables.at(assignTarget.name).isInit = true;
 
 		if(a.type != ARRAY && b.type != ARRAY)
-			substract(a, b, 1, 1);
+			substract(a, b, aI, bI, 1, 1);
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
-			arraySubstract(a, b, aI, bI, 1, 1);
+			substract(a, b, aI, bI, 1, 1);
 			argumentsTabIndex[0] = "NULL";
 			argumentsTabIndex[1] = "NULL";
 		}
@@ -569,20 +566,20 @@ forbody: TO value DO {
 		registerToMem("B",variables.at(name).memory);
 		forVariables.push_back(variables.at(assignTarget.name));
 
-		pushCommand("JZERO B");
+		addCode("JZERO B");
 		Jump jj;
 		newJump(&jj, code.size(), depth);
 		jumps.push_back(jj);
 
 		memToRegister(variables.at(name).memory, "B");
 		
-		addInt(jumps.at(jumps.size()-1).codePosition-1, code.size());
+		addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition-1, code.size());
 
 		Jump j;
 		newJump(&j, code.size(), depth);
 		jumps.push_back(j);
-		pushCommand("JZERO B");//todo dla rejestrow zmiennych
-		pushCommand("DEC B");
+		addCode("JZERO B");//todo dla rejestrow zmiennych
+		addCode("DEC B");
 		registerToMem("B", variables.at(name).memory);
 		assignFlag = true;
 	} else {
@@ -593,16 +590,16 @@ forbody: TO value DO {
 		Variable iterator = forVariables.at(forVariables.size()-1);
 		if(iterator.inRegister == "NULL") {
 			memToRegister(iterator.memory, "B");
-			pushCommand("DEC B");
+			addCode("DEC B");
 			registerToMem("B", iterator.memory);
 		} else {
-			pushCommand("DEC " + iterator.inRegister);
+			addCode("DEC " + iterator.inRegister);
 		}
 
 		long long int jumpCount = jumps.size()-1;
 		long long int stack = jumps.at(jumpCount-1).codePosition;
-		pushCommand("JUMP", stack);
-		addInt(jumps.at(jumpCount).codePosition, code.size());
+		addCode("JUMP", stack);
+		addJumpPlaceToCode(jumps.at(jumpCount).codePosition, code.size());
 		jumps.pop_back();
 		jumps.pop_back();
 
@@ -651,15 +648,15 @@ expression: value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 		if(a.type != ARRAY && b.type != ARRAY)
-			addition(a, b);
+			addition(a, b, aI, bI);
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
-			arrayAddition(a, b, aI, bI);
+			addition(a, b, aI, bI);
 			argumentsTabIndex[0] = "NULL";
 			argumentsTabIndex[1] = "NULL";
 		}
@@ -671,15 +668,16 @@ expression: value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
+
 		if(a.type != ARRAY && b.type != ARRAY)
-			substract(a, b, 0, 1);
+			substract(a, b, aI, bI, 0, 1);
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
-			arraySubstract(a, b, aI, bI, 0, 1);
+			substract(a, b, aI, bI, 0, 1);
 			argumentsTabIndex[0] = "NULL";
 			argumentsTabIndex[1] = "NULL";
 		}
@@ -720,13 +718,13 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			for(int i=0; i<times; ++i) {
-				pushCommand("ADD B B");
+				addCode("ADD B B");
 			}
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 
 			popVariable(a.name);
@@ -749,13 +747,13 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			for(int i=0; i<times; ++i) {
-				pushCommand("ADD B B");
+				addCode("ADD B B");
 			}
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 
 			popVariable(b.name);
@@ -778,7 +776,7 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			if(b.type == NUMBER) {
 				setRegister("C", b.name);
@@ -794,22 +792,22 @@ expression: value {
 				}
 			}
 			
-			pushCommand("JZERO C ",code.size()+10);  
-			pushCommand("SUB D D");
-			pushCommand("JZERO B", code.size()+9); 
-			pushCommand("JODD B ", code.size()+2); 
-			pushCommand("JUMP", code.size()+2);
-			pushCommand("ADD D C");
-			pushCommand("HALF B");
-			pushCommand("ADD C C");
-			pushCommand("JUMP",code.size()-6);
-			pushCommand("JUMP",code.size()+2);
+			addCode("JZERO C ",code.size()+10);  
+			addCode("SUB D D");
+			addCode("JZERO B", code.size()+9); 
+			addCode("JODD B ", code.size()+2); 
+			addCode("JUMP", code.size()+2);
+			addCode("ADD D C");
+			addCode("HALF B");
+			addCode("ADD C C");
+			addCode("JUMP",code.size()-6);
+			addCode("JUMP",code.size()+2);
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 
-			pushCommand("SUB D D");
-			pushCommand("COPY B D");	
+			addCode("SUB D D");
+			addCode("COPY B D");	
 		}
 
 		argumentsTabIndex[0] = "NULL";
@@ -856,13 +854,13 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			for(int i=0; i<times; ++i) {
-				pushCommand("HALF B");
+				addCode("HALF B");
 			}
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 		}
 		else if(a.type == NUMBER && b.type == NUMBER) {
@@ -889,7 +887,7 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			if(b.type == NUMBER) {
 				setRegister("C", b.name);
@@ -909,7 +907,7 @@ expression: value {
 			Jump juma;
 			newJump(&juma, code.size(), depth);
 			jumps.push_back(juma);
-			pushCommand("JZERO C");
+			addCode("JZERO C");
 
 			if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
 				registerToMem("E");
@@ -918,56 +916,56 @@ expression: value {
 			
 			
 
-			pushCommand("SUB E E"); 
-			pushCommand("COPY D C");
-			pushCommand("SUB D B");
-			pushCommand("JZERO D",code.size()+3); 
-			pushCommand("SUB B B");
-			pushCommand("JUMP", code.size()+35); 
+			addCode("SUB E E"); 
+			addCode("COPY D C");
+			addCode("SUB D B");
+			addCode("JZERO D",code.size()+3); 
+			addCode("SUB B B");
+			addCode("JUMP", code.size()+35); 
 			
-			pushCommand("COPY D B");
-			pushCommand("SUB D C");
-			pushCommand("JZERO D",code.size()+2);
-			pushCommand("JUMP",code.size()+4); 
-			pushCommand("SUB B B");
-			pushCommand("INC B");
-			pushCommand("JUMP", code.size()+28); 
+			addCode("COPY D B");
+			addCode("SUB D C");
+			addCode("JZERO D",code.size()+2);
+			addCode("JUMP",code.size()+4); 
+			addCode("SUB B B");
+			addCode("INC B");
+			addCode("JUMP", code.size()+28); 
 
-			pushCommand("COPY D C");
-			pushCommand("COPY A D");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+2);
-			pushCommand("JUMP",code.size()+3);
-			pushCommand("ADD D D");
-			pushCommand("JUMP",code.size()-5);
-			pushCommand("COPY A C");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+2);
-			pushCommand("JUMP", code.size()+10);
-			pushCommand("COPY A D");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+4);
-			pushCommand("HALF D");
-			pushCommand("ADD E E"); 
-			pushCommand("JUMP",code.size()-5);
-			pushCommand("SUB B D");
-			pushCommand("INC E"); 
-			pushCommand("JUMP",code.size()-12);
-			pushCommand("COPY A D"); 
-			pushCommand("SUB A C"); 
-			pushCommand("JZERO A", code.size()+4); 
-			pushCommand("ADD E E"); 
-			pushCommand("HALF D");
-			pushCommand("JUMP", code.size()-5);
-			pushCommand("COPY B E");
-			pushCommand("JUMP", code.size()+2);
+			addCode("COPY D C");
+			addCode("COPY A D");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+2);
+			addCode("JUMP",code.size()+3);
+			addCode("ADD D D");
+			addCode("JUMP",code.size()-5);
+			addCode("COPY A C");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+2);
+			addCode("JUMP", code.size()+10);
+			addCode("COPY A D");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+4);
+			addCode("HALF D");
+			addCode("ADD E E"); 
+			addCode("JUMP",code.size()-5);
+			addCode("SUB B D");
+			addCode("INC E"); 
+			addCode("JUMP",code.size()-12);
+			addCode("COPY A D"); 
+			addCode("SUB A C"); 
+			addCode("JZERO A", code.size()+4); 
+			addCode("ADD E E"); 
+			addCode("HALF D");
+			addCode("JUMP", code.size()-5);
+			addCode("COPY B E");
+			addCode("JUMP", code.size()+2);
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 
-			pushCommand("SUB B B");
+			addCode("SUB B B");
 
 			if ( std::find(freeRegisters.begin(), freeRegisters.end(), "E") == freeRegisters.end() ) {
 				memToRegister("E");
@@ -1020,7 +1018,7 @@ expression: value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 
 			if(b.type == NUMBER) {
 				setRegister("C", b.name);
@@ -1040,46 +1038,46 @@ expression: value {
 			Jump juma;
 			newJump(&juma, code.size(), depth);
 			jumps.push_back(juma);
-			pushCommand("JZERO C");
+			addCode("JZERO C");
 
-			pushCommand("COPY D C");
-			pushCommand("SUB D B");
-			pushCommand("JZERO D",code.size()+2); 
-			pushCommand("JUMP", code.size()+25); 
+			addCode("COPY D C");
+			addCode("SUB D B");
+			addCode("JZERO D",code.size()+2); 
+			addCode("JUMP", code.size()+25); 
 			
-			pushCommand("COPY D B");
-			pushCommand("SUB D C");
-			pushCommand("JZERO D",code.size()+2);
-			pushCommand("JUMP",code.size()+3); 
-			pushCommand("SUB B B");
-			pushCommand("JUMP", code.size()+19); 
+			addCode("COPY D B");
+			addCode("SUB D C");
+			addCode("JZERO D",code.size()+2);
+			addCode("JUMP",code.size()+3); 
+			addCode("SUB B B");
+			addCode("JUMP", code.size()+19); 
 
-			pushCommand("COPY D C");
-			pushCommand("COPY A D");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+2);
-			pushCommand("JUMP",code.size()+3);
-			pushCommand("ADD D D");
-			pushCommand("JUMP",code.size()-5);
-			pushCommand("COPY A C");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+2);
-			pushCommand("JUMP", code.size()+8);
-			pushCommand("COPY A D");
-			pushCommand("SUB A B");
-			pushCommand("JZERO A",code.size()+3);
-			pushCommand("HALF D");
-			pushCommand("JUMP",code.size()-4);
-			pushCommand("SUB B D");
-			pushCommand("JUMP",code.size()-10);
-			pushCommand("JUMP", code.size()+2);
+			addCode("COPY D C");
+			addCode("COPY A D");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+2);
+			addCode("JUMP",code.size()+3);
+			addCode("ADD D D");
+			addCode("JUMP",code.size()-5);
+			addCode("COPY A C");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+2);
+			addCode("JUMP", code.size()+8);
+			addCode("COPY A D");
+			addCode("SUB A B");
+			addCode("JZERO A",code.size()+3);
+			addCode("HALF D");
+			addCode("JUMP",code.size()-4);
+			addCode("SUB B D");
+			addCode("JUMP",code.size()-10);
+			addCode("JUMP", code.size()+2);
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size());
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size());
 			jumps.pop_back();
 
-			pushCommand("SUB B B");			
+			addCode("SUB B B");			
 		}
 
 
@@ -1095,6 +1093,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
 		if(a.type == NUMBER && b.type == NUMBER) {
 			if(stoll(a.name) == stoll(b.name))
@@ -1106,36 +1105,35 @@ condition: value EQ value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 		}
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
 
 			if(a.type != ARRAY && b.type != ARRAY)
-				substract(b, a, 0, 0);
+				substract(b, a, bI, aI, 0, 0);
 			else
-				arraySubstract(b, a, bI, aI, 0, 0);
+				substract(b, a, bI, aI, 0, 0);
 
-			pushCommand("JZERO B", code.size()+2);
+			addCode("JZERO B", code.size()+2);
 			Jump j;
 			newJump(&j, code.size(), depth);
 			jumps.push_back(j);
-			pushCommand("JUMP");
+			addCode("JUMP");
 
 			if(a.type != ARRAY && b.type != ARRAY)
-				substract(a, b, 0, 1);
+				substract(a, b, aI, bI, 0, 1);
 			else
-				arraySubstract(a, b, aI, bI, 0, 1);
+				substract(a, b, aI, bI, 0, 1);
 
-			pushCommand("JZERO B", code.size()+2);
+			addCode("JZERO B", code.size()+2);
 			Jump jj;
 			newJump(&jj, code.size(), depth);
 			jumps.push_back(jj);
-			pushCommand("JUMP");
+			addCode("JUMP");
 		}
 
 		expressionArguments[0] = "NULL";
@@ -1148,6 +1146,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
 		if(a.type == NUMBER && b.type == NUMBER) {
 			if(stoll(a.name) != stoll(b.name))
@@ -1159,37 +1158,36 @@ condition: value EQ value {
 			Jump jum;
 			newJump(&jum, code.size(), depth);
 			jumps.push_back(jum);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 		}
 		else {
-			Variable aI, bI;
 			if(variables.count(argumentsTabIndex[0]) > 0)
 				aI = variables.at(argumentsTabIndex[0]);
 			if(variables.count(argumentsTabIndex[1]) > 0)
 				bI = variables.at(argumentsTabIndex[1]);
 
 			if(a.type != ARRAY && b.type != ARRAY)
-				substract(b, a, 0, 0);
+				substract(b, a, bI, aI, 0, 0);
 			else
-				arraySubstract(b, a, bI, aI, 0, 0);
+				substract(b, a, bI, aI, 0, 0);
 
-			pushCommand("JZERO B", code.size()+2);
+			addCode("JZERO B", code.size()+2);
 			Jump j;
 			newJump(&j, code.size(), depth);
 			jumps.push_back(j);
-			pushCommand("JUMP");
+			addCode("JUMP");
 
 			if(a.type != ARRAY && b.type != ARRAY)
-				substract(a, b, 0, 1);
+				substract(a, b, aI, bI, 0, 1);
 			else
-				arraySubstract(a, b, aI, bI, 0, 1);
+				substract(a, b, aI, bI, 0, 1);
 
-			addInt(jumps.at(jumps.size()-1).codePosition, code.size()+1);
+			addJumpPlaceToCode(jumps.at(jumps.size()-1).codePosition, code.size()+1);
 			jumps.pop_back();
 			Jump jj;
 			newJump(&jj, code.size(), depth);
 			jumps.push_back(jj);
-			pushCommand("JZERO B");
+			addCode("JZERO B");
 		}
 
 		expressionArguments[0] = "NULL";
@@ -1202,6 +1200,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
 		Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
 		if(a.type == NUMBER && b.type == NUMBER) {
 			if(stoll(a.name) < stoll(b.name))
@@ -1212,15 +1211,15 @@ condition: value EQ value {
 			popVariable(b.name);
 		}
 		else {
+
 			if(a.type != ARRAY && b.type != ARRAY)
-				substract(b, a, 0, 1);
+				substract(b, a, bI, aI, 0, 1);
 			else {
-				Variable aI, bI;
 				if(variables.count(argumentsTabIndex[0]) > 0)
 					aI = variables.at(argumentsTabIndex[0]);
 				if(variables.count(argumentsTabIndex[1]) > 0)
 					bI = variables.at(argumentsTabIndex[1]);
-				arraySubstract(b, a, bI, aI, 0, 1);
+				substract(b, a, bI, aI, 0, 1);
 				argumentsTabIndex[0] = "NULL";
 				argumentsTabIndex[1] = "NULL";
 			}
@@ -1229,7 +1228,7 @@ condition: value EQ value {
 		Jump j;
 		newJump(&j, code.size(), depth);
 		jumps.push_back(j);
-		pushCommand("JZERO B");
+		addCode("JZERO B");
 
 		expressionArguments[0] = "NULL";
 		expressionArguments[1] = "NULL";
@@ -1239,6 +1238,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
         if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(b.name) < stoll(a.name))
@@ -1250,14 +1250,14 @@ condition: value EQ value {
         }
         else {
             if(a.type != ARRAY && b.type != ARRAY)
-                substract(a, b, 0, 1);
+                substract(a, b, aI, bI, 0, 1);
             else {
-                Variable aI, bI;
+                
                 if(variables.count(argumentsTabIndex[0]) > 0)
                     aI = variables.at(argumentsTabIndex[0]);
                 if(variables.count(argumentsTabIndex[1]) > 0)
                     bI = variables.at(argumentsTabIndex[1]);
-                arraySubstract(a, b, aI, bI, 0, 1);
+                substract(a, b, aI, bI, 0, 1);
                 argumentsTabIndex[0] = "NULL";
                 argumentsTabIndex[1] = "NULL";
             }
@@ -1266,7 +1266,7 @@ condition: value EQ value {
         Jump j;
         newJump(&j, code.size(), depth);
         jumps.push_back(j);;
-        pushCommand("JZERO B");
+        addCode("JZERO B");
 
         expressionArguments[0] = "NULL";
         expressionArguments[1] = "NULL";
@@ -1276,6 +1276,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;
 
         if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(a.name) <= stoll(b.name))
@@ -1287,14 +1288,13 @@ condition: value EQ value {
         }
         else {
             if(a.type != ARRAY && b.type != ARRAY)
-                substract(b, a, 1, 1);
+                substract(b, a, bI, aI, 1, 1);
             else {
-                Variable aI, bI;
                 if(variables.count(argumentsTabIndex[0]) > 0)
                     aI = variables.at(argumentsTabIndex[0]);
                 if(variables.count(argumentsTabIndex[1]) > 0)
                     bI = variables.at(argumentsTabIndex[1]);
-                arraySubstract(b, a, bI, aI, 1, 1);
+                substract(b, a, bI, aI, 1, 1);
                 argumentsTabIndex[0] = "NULL";
                 argumentsTabIndex[1] = "NULL";
             }
@@ -1303,7 +1303,7 @@ condition: value EQ value {
         Jump j;
         newJump(&j, code.size(), depth);
         jumps.push_back(j);
-        pushCommand("JZERO B");
+        addCode("JZERO B");
 
         expressionArguments[0] = "NULL";
         expressionArguments[1] = "NULL";
@@ -1313,6 +1313,7 @@ condition: value EQ value {
 	if(!preParsing) {
 		Variable a = variables.at(expressionArguments[0]);
         Variable b = variables.at(expressionArguments[1]);
+		Variable aI, bI;	
 
         if(a.type == NUMBER && b.type == NUMBER) {
             if(stoll(a.name) >= stoll(b.name))
@@ -1324,14 +1325,13 @@ condition: value EQ value {
         }
         else {
             if(a.type != ARRAY && b.type != ARRAY)
-                substract(a, b, 1, 1);
+                substract(a, b, aI, bI, 1, 1);
             else {
-                Variable aI, bI;
                 if(variables.count(argumentsTabIndex[0]) > 0)
                     aI = variables.at(argumentsTabIndex[0]);
                 if(variables.count(argumentsTabIndex[1]) > 0)
                     bI = variables.at(argumentsTabIndex[1]);
-                arraySubstract(a, b, aI, bI, 1, 1);
+                substract(a, b, aI, bI, 1, 1);
                 argumentsTabIndex[0] = "NULL";
                 argumentsTabIndex[1] = "NULL";
             }
@@ -1340,7 +1340,7 @@ condition: value EQ value {
         Jump j;
         newJump(&j, code.size(), depth);
         jumps.push_back(j);
-        pushCommand("JZERO B");
+        addCode("JZERO B");
 
         expressionArguments[0] = "NULL";
         expressionArguments[1] = "NULL";
@@ -1508,70 +1508,67 @@ void newJump(Jump *j, long long int stack, long long int depth) {
     j->depth = depth;
 }
 
-void addInt(long long int command, long long int val) {
+void addJumpPlaceToCode(long long int command, long long int val) {
     code.at(command) = code.at(command) + " " + std::to_string(val);
 }
 
-void substract(Variable a, Variable b, int isINC, int remove) {
-	
+ void substract(Variable a, Variable b, Variable aIndex, Variable bIndex, int isAddingOne, int removingTemps) {
+    
     if(a.type == NUMBER && b.type == NUMBER) {
-        long long int val = std::max(stoll(a.name) + isINC - stoll(b.name), (long long int) 0);
+        long long int val = std::max(stoll(a.name) + isAddingOne - stoll(b.name), (long long int) 0);
         setRegister("B", std::to_string(val));
-        if(remove) {
+        if(removingTemps) {
             popVariable(a.name);
             popVariable(b.name);
         }
     }
     else if(a.type == NUMBER && b.type == IDENTIFIER) {
-        setRegister("B", std::to_string(stoll(a.name) + isINC));
+        setRegister("B", std::to_string(stoll(a.name) + isAddingOne));
 		memToRegister(b.memory, "C");
-        pushCommand("SUB B C");
-        if(remove)
+        addCode("SUB B C");
+        if(removingTemps)
             popVariable(a.name);
     }
     else if(a.type == IDENTIFIER && b.type == NUMBER) {
         setRegister("C", b.name);
 		memToRegister(a.memory, "B");
-		if(isINC) {
-			pushCommand("INC B");
+		if(isAddingOne) {
+			addCode("INC B");
 		}
-        pushCommand("SUB B C");
-        if(remove)
+        addCode("SUB B C");
+        if(removingTemps)
             popVariable(b.name);
     }
     else if(a.type == IDENTIFIER && b.type == IDENTIFIER) {
         if(a.name == b.name) {
-            pushCommand("SUB B B");
-            if(isINC)
-                pushCommand("INC B");
+            addCode("SUB B B");
+            if(isAddingOne)
+                addCode("INC B");
         }
         else {
             memToRegister(a.memory, "B");
 			memToRegister(b.memory, "C");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
         }
     }
-}
-
- void arraySubstract(Variable a, Variable b, Variable aIndex, Variable bIndex, int isINC, int remove) {
-    if(a.type == NUMBER && b.type == ARRAY) {
+	else if(a.type == NUMBER && b.type == ARRAY) {
         if(bIndex.type == NUMBER) {
             long long int addr = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
-            setRegister("B", std::to_string(stoll(a.name) + isINC));
+            setRegister("B", std::to_string(stoll(a.name) + isAddingOne));
 			memToRegister(addr, "C");
-            pushCommand("SUB B C");
-            if(remove) {
+            addCode("SUB B C");
+            if(removingTemps) {
                 popVariable(a.name);
                 popVariable(bIndex.name);
             }
         }
         else if(bIndex.type == IDENTIFIER) {
             arrayIndexToRegister(b, bIndex, "C");
-            setRegister("B", std::to_string(stoll(a.name) + isINC));
-            pushCommand("SUB B C");
-            if(remove)
+            setRegister("B", std::to_string(stoll(a.name) + isAddingOne));
+            addCode("SUB B C");
+            if(removingTemps)
                 popVariable(a.name);
         }
     }
@@ -1581,11 +1578,11 @@ void substract(Variable a, Variable b, int isINC, int remove) {
 
 			setRegister("C", b.name);
 			memToRegister(addr, "B");
-			if(isINC)
-				pushCommand("INC B");
-			pushCommand("SUB B C");
+			if(isAddingOne)
+				addCode("INC B");
+			addCode("SUB B C");
             
-            if(remove) {
+            if(removingTemps) {
                 popVariable(b.name);
                 popVariable(aIndex.name);
             }
@@ -1594,12 +1591,12 @@ void substract(Variable a, Variable b, int isINC, int remove) {
 			arrayIndexToRegister(a, aIndex, "B");   
 			setRegister("C", b.name);
 			
-			if(isINC)
-				pushCommand("INC B");
+			if(isAddingOne)
+				addCode("INC B");
 
-			pushCommand("SUB B C");
+			addCode("SUB B C");
 		
-			if(remove)
+			if(removingTemps)
 				popVariable(b.name);
         }
     }
@@ -1608,18 +1605,18 @@ void substract(Variable a, Variable b, int isINC, int remove) {
             long long int addr = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             memToRegister(a.memory, "B");
 			memToRegister(addr, "C");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
-            if(remove)
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
+            if(removingTemps)
                 popVariable(bIndex.name);
         }
         else if(bIndex.type == IDENTIFIER) {
             arrayIndexToRegister(b, bIndex, "C");
             memToRegister(a.memory, "B");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
         }
     }
     else if(a.type == ARRAY && b.type == IDENTIFIER) {
@@ -1628,18 +1625,18 @@ void substract(Variable a, Variable b, int isINC, int remove) {
             memToRegister(b.memory, "C");
 			memToRegister(addr, "B");
 			
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
-            if(remove)
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
+            if(removingTemps)
                 popVariable(aIndex.name);
         }
         else if(aIndex.type == IDENTIFIER) {
             arrayIndexToRegister(a, aIndex, "B");
             memToRegister(b.memory, "C");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
         }
     }
     else if(a.type == ARRAY && b.type == ARRAY) {
@@ -1647,18 +1644,18 @@ void substract(Variable a, Variable b, int isINC, int remove) {
             long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
             long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
-                pushCommand("SUB B B");
-                if(isINC)
-                    pushCommand("INC B");
+                addCode("SUB B B");
+                if(isAddingOne)
+                    addCode("INC B");
             }
             else {
                 memToRegister(addrA, "B");
 				memToRegister(addrB, "C");
-                if(isINC)
-                    pushCommand("INC B");
-                pushCommand("SUB B C");
+                if(isAddingOne)
+                    addCode("INC B");
+                addCode("SUB B C");
             }
-            if(remove) {
+            if(removingTemps) {
                 popVariable(aIndex.name);
                 popVariable(bIndex.name);
             }
@@ -1667,40 +1664,40 @@ void substract(Variable a, Variable b, int isINC, int remove) {
             long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
             arrayIndexToRegister(b, bIndex, "C");
             memToRegister(addrA, "B");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
-            if(remove)
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
+            if(removingTemps)
                 popVariable(aIndex.name);
         }
         else if(aIndex.type == IDENTIFIER && bIndex.type == NUMBER) {
             long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             arrayIndexToRegister(a, aIndex, "B");
             memToRegister(addrB, "C");
-            if(isINC)
-                pushCommand("INC B");
-            pushCommand("SUB B C");
-            if(remove)
+            if(isAddingOne)
+                addCode("INC B");
+            addCode("SUB B C");
+            if(removingTemps)
                 popVariable(bIndex.name);
         }
         else if(aIndex.type == IDENTIFIER && bIndex.type == IDENTIFIER) {
             if(a.name == b.name && aIndex.name == bIndex.name) {
-                pushCommand("SUB B B");
-                if(isINC)
-                    pushCommand("INC B");
+                addCode("SUB B B");
+                if(isAddingOne)
+                    addCode("INC B");
             }
             else {
                 arrayIndexToRegister(a, aIndex, "B");
 				arrayIndexToRegister(b, bIndex, "C");
-                if(isINC)
-                    pushCommand("INC B");
-                pushCommand("SUB B C");
+                if(isAddingOne)
+                    addCode("INC B");
+                addCode("SUB B C");
             }
         }
     }
 }
 
-void addition(Variable a, Variable b) {
+void addition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
 	if(a.type == NUMBER && b.type == NUMBER) {
 		long long int val = stoll(a.name) + stoll(b.name);
         setRegister("B", std::to_string(val));
@@ -1712,31 +1709,27 @@ void addition(Variable a, Variable b) {
 		if(stoll(c.name) <= 3) {
 			memToRegister(d.memory, "B");
             for(int i=0; i < stoll(c.name); i++) {
-                pushCommand("INC B");
+                addCode("INC B");
             }
             popVariable(c.name);
         }
         else {
             setRegister("B", c.name);
 			memToRegister(d.memory, "C");
-            pushCommand("ADD B C");
+            addCode("ADD B C");
             popVariable(c.name);
         }
 	} else if(a.type == IDENTIFIER && b.type == IDENTIFIER) {
 		if(a.name == b.name) {
             memToRegister(a.memory, "B");
-            pushCommand("ADD B B");
+            addCode("ADD B B");
         }
         else {
             memToRegister(a.memory, "B");
 			memToRegister(b.memory, "C");
-            pushCommand("ADD B C");
+            addCode("ADD B C");
         }
-	}
-}
-void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
-	
-	if((a.type == NUMBER && b.type == ARRAY) || (a.type == ARRAY && b.type == NUMBER)) {
+	} else if((a.type == NUMBER && b.type == ARRAY) || (a.type == ARRAY && b.type == NUMBER)) {
 		if(a.type == ARRAY) {
 			Variable temp = a;
 			a = b;
@@ -1751,13 +1744,13 @@ void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
 			if(stoll(a.name) <= 3) {
 				memToRegister(addr, "B");
 				for(int i=0; i < stoll(a.name); i++) {
-					pushCommand("INC B");
+					addCode("INC B");
 				}
 			}
             else {
                 setRegister("C", a.name);
                 memToRegister(addr, "B");
-				pushCommand("ADD B C");
+				addCode("ADD B C");
             }
 
             popVariable(a.name);
@@ -1769,11 +1762,11 @@ void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
 
 			if(stoll(a.name) <= 3) {
 				for(int i=0; i < stoll(a.name); i++) {
-					pushCommand("INC B");
+					addCode("INC B");
 				}
 			} else {
                 setRegister("C", a.name);
-				pushCommand("ADD B C");
+				addCode("ADD B C");
             }
 
             popVariable(a.name);
@@ -1794,13 +1787,13 @@ void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
 			long long int addr = b.memory + stoll(cIndex.name) + 1 - b.beginTable;
 			memToRegister(a.memory, "B");
 			memToRegister(addr, "C");
-            pushCommand("ADD B C");
+            addCode("ADD B C");
             popVariable(cIndex.name);
         }
         else if(cIndex.type == IDENTIFIER) { 
 			arrayIndexToRegister(b, cIndex, "B"); 
 			memToRegister(a.memory, "C");
-			pushCommand("ADD B C");
+			addCode("ADD B C");
         }
     }
     else if(a.type == ARRAY && b.type == ARRAY) {
@@ -1809,12 +1802,12 @@ void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
             long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
             if(a.name == b.name && addrA == addrB) {
                 memToRegister(addrA, "B");
-                pushCommand("ADD B B");
+                addCode("ADD B B");
             }
             else {
                 memToRegister(addrA, "B");
 				memToRegister(addrB, "C");
-                pushCommand("ADD B C");
+                addCode("ADD B C");
             }
             popVariable(aIndex.name);
             popVariable(bIndex.name);
@@ -1823,26 +1816,26 @@ void arrayAddition(Variable a, Variable b, Variable aIndex, Variable bIndex) {
             long long int addrA = a.memory + stoll(aIndex.name) + 1 - a.beginTable;
 			arrayIndexToRegister(b, bIndex, "B");
 			memToRegister(addrA, "C");
-			pushCommand("ADD B C");
+			addCode("ADD B C");
             popVariable(aIndex.name);
         }
         else if(aIndex.type == IDENTIFIER && bIndex.type == NUMBER) {
 			long long int addrB = b.memory + stoll(bIndex.name) + 1 - b.beginTable;
 			arrayIndexToRegister(a, aIndex, "B");
 			memToRegister(addrB, "C");
-			pushCommand("ADD B C");
+			addCode("ADD B C");
             popVariable(bIndex.name);
         }
         else if(aIndex.type == IDENTIFIER && bIndex.type == IDENTIFIER) {
             if(a.name == b.name && aIndex.name == bIndex.name) {
                 arrayIndexToRegister(a, aIndex, "B");
-				pushCommand("ADD B B");
+				addCode("ADD B B");
             }
             else {
                 arrayIndexToRegister(a, aIndex, "B");
 				arrayIndexToRegister(b, bIndex, "C");
 
-				pushCommand("ADD B C");
+				addCode("ADD B C");
             }
         }
     }
@@ -1853,29 +1846,29 @@ void arrayIndexToRegister(Variable tab, Variable index, std::string reg) {
 	if(index.inRegister == "NULL") {
 		memToRegister(index.memory, "C");
 	} else {
-		pushCommand("COPY C " + index.inRegister);
+		addCode("COPY C " + index.inRegister);
 	}
 	setRegister("A", std::to_string(offset));
-	pushCommand("ADD A C");
+	addCode("ADD A C");
 	setRegister("C", std::to_string(tab.beginTable));
-	pushCommand("SUB A C");
-	pushCommand("LOAD " + reg);
+	addCode("SUB A C");
+	addCode("LOAD " + reg);
 }
 
 void setRegister(std::string reg, std::string number) {
     long long int n = stoll(number);
 	
-    std::string bin = decToBin(n);
+    std::string bin = toBinary(n);
 	long long int limit = bin.size();
    
-	pushCommand("SUB " + reg + " " + reg);
+	addCode("SUB " + reg + " " + reg);
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
-			pushCommand("INC " + reg);
+			addCode("INC " + reg);
 			
 		}
 		if(i < (limit - 1)){
-	        pushCommand("ADD " + reg + " " + reg);
+	        addCode("ADD " + reg + " " + reg);
 	        
 		}
 	}
@@ -1890,20 +1883,20 @@ void memToRegister(std::string reg) {
 		}
 	}
 
-	pushCommand("SUB A A");
-	std::string bin = decToBin(mem);
+	addCode("SUB A A");
+	std::string bin = toBinary(mem);
 	long long int limit = bin.size();
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
-			pushCommand("INC A");
+			addCode("INC A");
 			
 		}
 		if(i < (limit - 1)){
-	        pushCommand("ADD A A");
+	        addCode("ADD A A");
 	        
 		}
 	}
-    pushCommand("LOAD " + reg); 
+    addCode("LOAD " + reg); 
 }
 void memToRegister(long long int mem, std::string reg) {
 
@@ -1918,28 +1911,31 @@ void memToRegister(long long int mem, std::string reg) {
 	}
 
 	if(flag) {
-		pushCommand("COPY " + reg + " " + srcReg);
+		addCode("COPY " + reg + " " + srcReg);
 	} else {
-		pushCommand("SUB A A");
-		std::string bin = decToBin(mem);
+		addCode("SUB A A");
+		std::string bin = toBinary(mem);
 		long long int limit = bin.size();
 		for(long long int i = 0; i < limit; ++i){
 			if(bin[i] == '1'){
-				pushCommand("INC A");
+				addCode("INC A");
 				
 			}
 			if(i < (limit - 1)){
-				pushCommand("ADD A A");
+				addCode("ADD A A");
 				
 			}
 		}
-		pushCommand("LOAD " + reg); 
+		addCode("LOAD " + reg); 
 	}
 }
 
-std::string decToBin(long long int n) {
+std::string toBinary(long long int n) {
     std::string r;
-    while(n!=0) {r=(n%2==0 ?"0":"1")+r; n/=2;}
+    while(n!=0) {
+		r=(n%2==0 ?"0":"1")+r; 
+		n/=2;
+	}
     return r;
 }
 
@@ -1952,20 +1948,20 @@ void registerToMem(std::string reg) {
 		}
 	}
 
-	pushCommand("SUB A A");
-	std::string bin = decToBin(mem);
+	addCode("SUB A A");
+	std::string bin = toBinary(mem);
 	long long int limit = bin.size();
 	for(long long int i = 0; i < limit; ++i){
 		if(bin[i] == '1'){
-			pushCommand("INC A");
+			addCode("INC A");
 			
 		}
 		if(i < (limit - 1)){
-	        pushCommand("ADD A A");
+	        addCode("ADD A A");
 	        
 		}
 	}
-    pushCommand("STORE " + reg); 
+    addCode("STORE " + reg); 
 }
 void registerToMem(std::string reg, long long int mem) {
 	
@@ -1980,22 +1976,22 @@ void registerToMem(std::string reg, long long int mem) {
 	}
 	
 	if(flag) {
-		pushCommand("COPY " + srcReg + " " + reg);
+		addCode("COPY " + srcReg + " " + reg);
 	} else {
-		pushCommand("SUB A A");
-		std::string bin = decToBin(mem);
+		addCode("SUB A A");
+		std::string bin = toBinary(mem);
 		long long int limit = bin.size();
 		for(long long int i = 0; i < limit; ++i){
 			if(bin[i] == '1'){
-				pushCommand("INC A");
+				addCode("INC A");
 				
 			}
 			if(i < (limit - 1)){
-				pushCommand("ADD A A");
+				addCode("ADD A A");
 				
 			}
 		}
-		pushCommand("STORE " + reg); 
+		addCode("STORE " + reg); 
 	}
 }
 
@@ -2032,7 +2028,7 @@ void popVariable(std::string key) {
 			if(!(key == preParsingVars[0] || key == preParsingVars[1] || key == preParsingVars[2] || key == preParsingVars[3]))
 				freeRegisters.push_back(reg);
 			
-			pushCommand("SUB " + reg + " " + reg);
+			addCode("SUB " + reg + " " + reg);
 		}
         if(variables.at(key).numberAmount > 0) {
             variables.at(key).numberAmount = variables.at(key).numberAmount-1;
@@ -2056,11 +2052,11 @@ void insertVariable(std::string key, Variable i) {
     	std::cout << "Add: " << key << " name: " << i.name << " type: " << i.type << " memory:" << memoryIndex-1 << " reg:" << i.inRegister << std::endl;
 }
 
-void pushCommand(std::string str) {
+void addCode(std::string str) {
     code.push_back(str);
 }
 
-void pushCommand(std::string str, long long int num) {
+void addCode(std::string str, long long int num) {
     std::string temp = str + " " + std::to_string(num);
     code.push_back(temp);
 }
