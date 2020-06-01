@@ -16,6 +16,3 @@ Kompilator prostego języka imperatywnego.
 
 ### Użycie
 ```kompilator <input> <output>```, gdzie ```input``` to plik napisany językiem imperatywnym, a ```output``` to kod maszyny rejestrowej.
-
-### Autor
-Jakub Grześczyk (numer indeksu do wiadomości wykładowcy)
